@@ -273,6 +273,13 @@
 		"zho"			"是否顯示瞄準的玩家數據"
 	}
 
+	"phrase_menu_show_aim_player_name"
+	{
+		"en"			"Whether to display targeted player name"
+		"chi"			"是否显示瞄准的玩家名称"
+		"zho"			"是否顯示瞄準的玩家名称"
+	}
+
 	"phrase_menu_show_aim_zombie"
 	{
 		"en"			"Whether to display targeted zombie data"

@@ -29,22 +29,23 @@
 #define OBS_MODE_POI                        6   // Third Person but no player name and health ?
 #define OBS_MODE_FREE                       7   // Free
 
-#define BIT_SHOW_ENABLED                    (1 << 0)
-#define BIT_SHOW_AT_DEATH                   (1 << 1)
-#define BIT_SHOW_SELF_NAME                  (1 << 2)
-#define BIT_SHOW_SELF_HEALTH                (1 << 3)
-#define BIT_SHOW_SELF_STAMINA               (1 << 4)
-#define BIT_SHOW_SELF_SPEED                 (1 << 5)
-#define BIT_SHOW_SELF_CLIP                  (1 << 6)
-#define BIT_SHOW_SELF_INVENTORY             (1 << 7)
-#define BIT_SHOW_SELF_STATUS                (1 << 8)
-#define BIT_SHOW_AIM                        (1 << 9)
-#define BIT_SHOW_AIM_PLAYER                 (1 << 10)
-#define BIT_SHOW_AIM_ZOMBIE                 (1 << 11)
-#define BIT_SHOW_AIM_AMMO                   (1 << 12)
-#define BIT_SHOW_AIM_ITEM                   (1 << 13)
-#define BIT_SHOW_DIVIDER                    (1 << 14)
-#define BIT_DEFAULT                         (1 << 15) - 1 - BIT_SHOW_SELF_NAME - BIT_SHOW_SELF_SPEED - BIT_SHOW_SELF_INVENTORY
+#define BIT_SHOW_ENABLED                    ( 1 << 0 )
+#define BIT_SHOW_AT_DEATH                   ( 1 << 1 )
+#define BIT_SHOW_SELF_NAME                  ( 1 << 2 )
+#define BIT_SHOW_SELF_HEALTH                ( 1 << 3 )
+#define BIT_SHOW_SELF_STAMINA               ( 1 << 4 )
+#define BIT_SHOW_SELF_SPEED                 ( 1 << 5 )
+#define BIT_SHOW_SELF_CLIP                  ( 1 << 6 )
+#define BIT_SHOW_SELF_INVENTORY             ( 1 << 7 )
+#define BIT_SHOW_SELF_STATUS                ( 1 << 8 )
+#define BIT_SHOW_AIM                        ( 1 << 9 )
+#define BIT_SHOW_AIM_PLAYER                 ( 1 << 10 )
+#define BIT_SHOW_AIM_PLAYER_NAME            ( 1 << 11 )
+#define BIT_SHOW_AIM_ZOMBIE                 ( 1 << 12 )
+#define BIT_SHOW_AIM_AMMO                   ( 1 << 13 )
+#define BIT_SHOW_AIM_ITEM                   ( 1 << 14 )
+#define BIT_SHOW_DIVIDER                    ( 1 << 15 )
+#define BIT_DEFAULT                         ( 1 << 16 ) - 1 - BIT_SHOW_SELF_NAME - BIT_SHOW_SELF_SPEED - BIT_SHOW_SELF_INVENTORY
 
 public Plugin myinfo =
 {
@@ -180,7 +181,7 @@ public void OnPluginStart()
     cv_always_show_target = convar.BoolValue;
     (convar = CreateConVar(PREFIX_CV..."_always_show_divider",  "0",        "0 = 没有目标时不显示分界线. 1 = 即使没有目标也显示分界线", _, true, 0.0, true, 1.0)).AddChangeHook(On_ConVar_Change);
     cv_always_show_divider = convar.BoolValue;
-    (convar = CreateConVar(PREFIX_CV..."_update_interval",      "0.2",      "越小刷新越快, 性能消耗越大。单位-秒", _, true, 0.01)).AddChangeHook(On_ConVar_Change);
+    (convar = CreateConVar(PREFIX_CV..."_update_interval",      "0.25",     "越小刷新越快, 性能消耗越大, 占用的网络带宽也越多。单位-秒", _, true, 0.01)).AddChangeHook(On_ConVar_Change);
     cv_update_interval = convar.FloatValue;
     (convar = CreateConVar(PREFIX_CV..."_trace_range",          "1024.0",   "The maximum reach of the player target trace in game units", _, true, 0.1)).AddChangeHook(On_ConVar_Change);
     cv_target_range = convar.FloatValue;
@@ -336,8 +337,11 @@ void Get_HUD_Text(int client, int to_client, char[] text)
 {
     text[0] = '\0';
     // strcopy(text, PREFIX_MESSAGE);
-
-    AddText_Player(client, to_client, text);                // 名称
+    if( checkClientPerf(to_client, BIT_SHOW_SELF_NAME) )
+    {
+        AddNewLine_Player_Name(client, client, text);       // 自己的 名称
+    }
+    AddText_Player(client, to_client, text);                // 自己的 数据
 
     if( checkClientPerf(to_client, BIT_SHOW_AIM) )          // 瞄准的目标
     {
@@ -359,6 +363,10 @@ void Get_HUD_Text(int client, int to_client, char[] text)
             if( IsClientInGame(aim_entity) && IsPlayerAlive(aim_entity) && checkClientPerf(to_client, BIT_SHOW_AIM_PLAYER) )
             {
                 AddNewLine_Divider(to_client, text);
+                if( checkClientPerf(to_client, BIT_SHOW_AIM_PLAYER_NAME) )
+                {
+                    AddNewLine_Player_Name(aim_entity, to_client, text); // 目标玩家的 名称
+                }
                 AddText_Player(aim_entity, to_client, text);
             }
         }
@@ -522,10 +530,10 @@ void AddNweLine_Zombie_Health(int entity, int to_client, char[] text)
 stock void AddText_Player(int client, int to_client, char[] text)
 {
     // Todo: 支持皮肤名称
-    if( checkClientPerf(to_client, BIT_SHOW_SELF_NAME) )        // 名称
-    {
-        AddNewLine_Player_Name(client, to_client, text);
-    }
+    // if( checkClientPerf(to_client, BIT_SHOW_SELF_NAME) )        // 名称
+    // {
+    //     AddNewLine_Player_Name(client, to_client, text);
+    // }
     if( checkClientPerf(to_client, BIT_SHOW_SELF_HEALTH) )      // 血量
     {
         AddNewLine_Player_Health(client, to_client, text);
@@ -738,6 +746,7 @@ void ShowMenuClientPrefs(int client, int at=0)
     custom_add_item(menu_cookie, client, BIT_SHOW_SELF_STATUS,      "phrase_menu_show_self_status");
     custom_add_item(menu_cookie, client, BIT_SHOW_AIM,              "phrase_menu_show_aim");
     custom_add_item(menu_cookie, client, BIT_SHOW_AIM_PLAYER,       "phrase_menu_show_aim_player");
+    custom_add_item(menu_cookie, client, BIT_SHOW_AIM_PLAYER_NAME,  "phrase_menu_show_aim_player_name");
     custom_add_item(menu_cookie, client, BIT_SHOW_AIM_ZOMBIE,       "phrase_menu_show_aim_zombie");
     custom_add_item(menu_cookie, client, BIT_SHOW_AIM_AMMO,         "phrase_menu_show_aim_ammo");
     custom_add_item(menu_cookie, client, BIT_SHOW_AIM_ITEM,         "phrase_menu_show_aim_item");
