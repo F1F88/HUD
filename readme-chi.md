@@ -1,6 +1,6 @@
 # HUD
 
-**文档 :**  [English](./README.md) | [中文](./README_CHI.md)
+**文档 :**  [English](./readme.md) | [中文](./readme-chi.md)
 
 此插件可以将以下数据显示到HUD（KeyHintText）
 

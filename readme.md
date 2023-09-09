@@ -1,6 +1,6 @@
 # HUD
 
-<!-- **Document :**  [English](./README.md) | [中文](./README_CHI.md) -->
+**Document :**  [English](./readme.md) | [中文](./readme-chi.md)
 
 This plugin can display the following data to HUD (KeyHintText)
 
