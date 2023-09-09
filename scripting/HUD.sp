@@ -14,7 +14,7 @@
 #define MAXPLAYERS                          9
 
 #define PLUGIN_NAME                         "HUD"
-#define PLUGIN_VERSION                      "v1.0.0"
+#define PLUGIN_VERSION                      "v1.1.0"
 #define PLUGIN_DESCRIPTION                  "Show data in HUD (KeyHintText)"
 #define PREFIX_CV                           "sm_hud"
 #define PREFIX_MESSAGE                      "[HUD] By F1F88"
