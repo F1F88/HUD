@@ -299,9 +299,9 @@ void Frame_Send_All()
 {
     static int client;
     static char text[MAX_KEY_HINT_TEXT_LEN];
-    static float start, end;
+    // static float start, end;
 
-    start = GetEngineTime();
+    // start = GetEngineTime();
     // for(int i=0; i<=10; ++i)
     for( client=1; client<=MaxClients; ++client )
     {
@@ -328,8 +328,8 @@ void Frame_Send_All()
             }
         }
     }
-    end = GetEngineTime();
-    PrintToServer(" size=%d | %f - %f = %f ", strlen(text), end, start, end-start);
+    // end = GetEngineTime();
+    // PrintToServer(" size=%d | %f - %f = %f ", strlen(text), end, start, end-start);
 }
 
 void Get_HUD_Text(int client, int to_client, char[] text)
