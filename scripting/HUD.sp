@@ -5,29 +5,21 @@
 #include <clientprefs>
 #define  REQUIRE_EXTENSIONS
 
-#include <vscript_proxy>
-
 #pragma semicolon 1
 #pragma newdecls required
 
 #undef  MAXPLAYERS
 #define MAXPLAYERS                          9
 
+#define MAX_KEY_HINT_TEXT_LEN               255
+#define MAX_CLASSNAME                       32
+
 #define PLUGIN_NAME                         "HUD"
-#define PLUGIN_VERSION                      "v1.1.1"
+#define PLUGIN_VERSION                      "v1.2.0"
 #define PLUGIN_DESCRIPTION                  "Show data in HUD (KeyHintText)"
 #define PREFIX_CV                           "sm_hud"
 #define PREFIX_MESSAGE                      "[HUD] By F1F88"
 #define PREFIX_PHRASES_FILE                 PLUGIN_NAME
-
-#define MAX_KEY_HINT_TEXT_LEN               255
-#define MAX_CLASSNAME                       32
-
-#define OBS_MODE_NONE                       0
-#define OBS_MODE_IN_EYE                     4   // First Person
-#define OBS_MODE_CHASE                      5   // Third Person
-#define OBS_MODE_POI                        6   // Third Person but no player name and health ?
-#define OBS_MODE_FREE                       7   // Free
 
 #define BIT_SHOW_ENABLED                    ( 1 << 0 )
 #define BIT_SHOW_AT_DEATH                   ( 1 << 1 )
@@ -45,7 +37,7 @@
 #define BIT_SHOW_AIM_AMMO                   ( 1 << 13 )
 #define BIT_SHOW_AIM_ITEM                   ( 1 << 14 )
 #define BIT_SHOW_DIVIDER                    ( 1 << 15 )
-#define BIT_DEFAULT                         ( 1 << 16 ) - 1 - BIT_SHOW_SELF_NAME - BIT_SHOW_SELF_SPEED - BIT_SHOW_SELF_INVENTORY
+#define BIT_DEFAULT                         ( 1 << 16 ) - 1 - BIT_SHOW_SELF_NAME - BIT_SHOW_SELF_SPEED
 
 public Plugin myinfo =
 {
@@ -58,18 +50,47 @@ public Plugin myinfo =
 
 enum
 {
-    O_Bleed,
-    O_InfectedStart,
-    O_InfectedEnd,
-    O_Blindness,
-    O_Stamina,
-    O_ActiveWeapon,
-    O_Ammo,
-    // O_CarriedWeight,
-    O_ObserverMode,
-    O_ObserverTarget,
-    O_Type,
-    O_Clip,
+    OBS_MODE_IN_EYE = 4,    // First Person
+    OBS_MODE_CHASE,         // Third Person
+    OBS_MODE_POI,           // Third Person but no player name and health ?
+    OBS_MODE_FREE,          // Free
+}
+
+enum
+{
+    O_AMMO_9MM = 1,     // 1
+    O_AMMO_45ACP,       // 2
+    O_AMMO_357,         // 3
+    O_AMMO_12Gauge,     // 4
+    O_AMMO_22LR,        // 5
+    O_AMMO_308,         // 6
+    O_AMMO_556,         // 7
+    O_AMMO_762,         // 8
+    O_AMMO_Grenade,     // 9    | weight: 100
+    O_AMMO_Molotov,     // 10   | weight: 100
+    O_AMMO_TNT,         // 11   | weight: 100
+    O_AMMO_ARROW,       // 12
+    O_AMMO_Fuel,        // 13
+    O_AMMO_Boards,      // 14
+    O_AMMO_Flares,      // 15
+
+    O_AMMO_Total
+}
+
+enum
+{
+    O_Bleed,            // 是否流血
+    O_InfectedStart,    // 感染开始时间
+    O_InfectedEnd,      // 感染结束时间
+    O_BlindnessEnd,     // 疫苗部分失明影响结束时间
+    O_Stamina,          // 体力
+    O_Ammo,             // 弹药库
+    O_ActiveWeapon,     // 当前武器
+    O_CarriedWeight,    // 一号背包重量
+    O_ObserverMode,     // 观察模式
+    O_ObserverTarget,   // 观察的目标
+    O_Type,             // 武器的弹药类型
+    O_Clip,             // 武器弹夹剩余子弹数
 
     O_Total
 };
@@ -83,8 +104,10 @@ bool        cv_plugin_enabled
             , cv_always_show_divider
             , cv_always_show_target;
 
-float       cv_inv_maxcarry
-            , cv_update_interval
+int         cv_inv_maxcarry
+            , cv_inv_ammoweight;
+
+float       cv_update_interval
             , cv_target_range
             , cv_trace_width;
 
@@ -112,9 +135,9 @@ public APLRes AskPluginLoad2(Handle myself, bool late, char[] error, int err_max
         strcopy(error, err_max,     "Can't find offset 'CNMRiH_Player::m_flInfectionDeathTime'!");
         return APLRes_Failure;
     }
-    if( (g_offset[O_Blindness]      = FindSendPropInfo("CNMRiH_Player", "IsPartialBlindnessActive")) < 1 )
+    if( (g_offset[O_BlindnessEnd]   = FindSendPropInfo("CNMRiH_Player", "m_flPartialBlindnessEffectEnd")) < 1 )
     {
-        strcopy(error, err_max,     "Can't find offset 'CNMRiH_Player::IsPartialBlindnessActive'!");
+        strcopy(error, err_max,     "Can't find offset 'CNMRiH_Player::m_flPartialBlindnessEffectEnd'!");
         return APLRes_Failure;
     }
     if( (g_offset[O_Stamina]        = FindSendPropInfo("CNMRiH_Player", "m_flStamina")) < 1 )
@@ -132,11 +155,11 @@ public APLRes AskPluginLoad2(Handle myself, bool late, char[] error, int err_max
         strcopy(error, err_max,     "Can't find offset 'CNMRiH_Player::m_iAmmo'!");
         return APLRes_Failure;
     }
-    // if( (g_offset[O_CarriedWeight]  = FindSendPropInfo("CNMRiH_Player", "_carriedWeight")) < 1 )
-    // {
-    //     strcopy(error, err_max,     "Can't find offset 'CNMRiH_Player::_carriedWeight'!");
-    //     return APLRes_Failure;
-    // }
+    if( (g_offset[O_CarriedWeight]  = FindSendPropInfo("CNMRiH_Player", "_carriedWeight")) < 1 )
+    {
+        strcopy(error, err_max,     "Can't find offset 'CNMRiH_Player::_carriedWeight'!");
+        return APLRes_Failure;
+    }
     if( (g_offset[O_ObserverMode]   = FindSendPropInfo("CNMRiH_Player", "m_iObserverMode")) < 1 )
     {
         strcopy(error, err_max,     "Can't find offset 'CNMRiH_Player::m_iObserverMode'!");
@@ -191,7 +214,10 @@ public void OnPluginStart()
     (convar = CreateConVar(PREFIX_CV..."_trace_width",          "32.0",     "搜索目标的射线的宽度 | 捕获率低可以增加 | 捕获正确率低可以减少", _, true, 0.1)).AddChangeHook(On_ConVar_Change);
     cv_trace_width = convar.FloatValue;
     (convar = FindConVar("inv_maxcarry")).AddChangeHook(On_ConVar_Change);
-    cv_inv_maxcarry = convar.FloatValue;
+    cv_inv_maxcarry = convar.IntValue;
+    (convar = FindConVar("inv_ammoweight")).AddChangeHook(On_ConVar_Change);
+    cv_inv_ammoweight = convar.IntValue;
+
     AutoExecConfig(true, PLUGIN_NAME);
 
     HookEvent("player_spawn",   On_player_spawn,    EventHookMode_Post);
@@ -210,39 +236,43 @@ public void On_ConVar_Change(ConVar convar, const char[] old_value, const char[]
     char convar_name[64];
     convar.GetName(convar_name, 64);
 
-    if( strcmp(convar_name, PREFIX_CV..."_enabled") == 0 )
+    if( ! strcmp(convar_name, PREFIX_CV..."_enabled") )
     {
         cv_plugin_enabled = convar.BoolValue;
         Global_Timer_On();
     }
-    else if( strcmp(convar_name, PREFIX_CV..."_always_show_status") == 0 )
+    else if( ! strcmp(convar_name, PREFIX_CV..."_always_show_status") )
     {
         cv_always_show_status = convar.BoolValue;
     }
-    else if( strcmp(convar_name, PREFIX_CV..."_always_show_ammo") == 0 )
+    else if( ! strcmp(convar_name, PREFIX_CV..."_always_show_ammo") )
     {
         cv_always_show_ammo = convar.BoolValue;
     }
-    else if( strcmp(convar_name, PREFIX_CV..."_always_show_target") == 0 )
+    else if( ! strcmp(convar_name, PREFIX_CV..."_always_show_target") )
     {
         cv_always_show_target = convar.BoolValue;
     }
-    else if( strcmp(convar_name, PREFIX_CV..."_update_interval") == 0 )
+    else if( ! strcmp(convar_name, PREFIX_CV..."_update_interval") )
     {
         cv_update_interval = convar.FloatValue;
         Global_Timer_On();
     }
-    else if( strcmp(convar_name, PREFIX_CV..."_target_range") == 0 )
+    else if( ! strcmp(convar_name, PREFIX_CV..."_target_range") )
     {
         cv_target_range = convar.FloatValue;
     }
-    else if( strcmp(convar_name, PREFIX_CV..."_trace_width") == 0 )
+    else if( ! strcmp(convar_name, PREFIX_CV..."_trace_width") )
     {
         cv_trace_width = convar.FloatValue;
     }
-    else if( strcmp(convar_name, "inv_maxcarry") == 0 )
+    else if( ! strcmp(convar_name, "inv_maxcarry") )
     {
-        cv_inv_maxcarry = convar.FloatValue;
+        cv_inv_maxcarry = convar.IntValue;
+    }
+    else if( ! strcmp(convar_name, "inv_ammoweight") )
+    {
+        cv_inv_ammoweight = convar.IntValue;
     }
 }
 
@@ -411,13 +441,13 @@ void AddNewLine_Speed(int entity, int to_client, char[] text)
 
 void AddNewLine_Player_Clip(int client, int to_client, char[] text)
 {
-    static int active_weapon, weapon_clip_remaining, backpack_remaining;
+    static int weapon, weapon_clip_remaining, backpack_remaining;
 
-    active_weapon = GetEntDataEnt2(client, g_offset[O_ActiveWeapon]);
+    weapon = GetEntDataEnt2(client, g_offset[O_ActiveWeapon]);
     if(
-        IsValidEntity(active_weapon)
-        && ( weapon_clip_remaining = GetEntData(active_weapon, g_offset[O_Clip]) ) >= 0
-        && ( backpack_remaining = GetEntData(client, g_offset[O_Ammo] + GetEntData(active_weapon, g_offset[O_Type]) * 4) ) >= 0
+        IsValidEntity(weapon)
+        && ( weapon_clip_remaining = GetWeapon_Clip1_Remaining(weapon) ) >= 0
+        && ( backpack_remaining = GetWeapon_ClipBK_Remaining(client, weapon) ) >= 0
     ) {
         Format(text, MAX_KEY_HINT_TEXT_LEN, "%s%T\n", text, "phrase_clip", to_client, weapon_clip_remaining, backpack_remaining);
     }
@@ -429,12 +459,7 @@ void AddNewLine_Player_Clip(int client, int to_client, char[] text)
 
 void AddNewLine_Player_Inventory(int client, int to_client, char[] text)
 {
-    static int carriedWeight_max, carriedWeight_all;
-
-    carriedWeight_max = RoundToNearest( cv_inv_maxcarry );
-    carriedWeight_all = RoundToNearest( RunEntVScriptFloat(client, "GetCarriedWeight()") );     // Todo: 优化效率 (性能测试中 VScript 的效率偏低, 仅这一行占用了 50% 的性能消耗)
-
-    Format(text, MAX_KEY_HINT_TEXT_LEN, "%s%T\n", text, "phrase_inventory", to_client, carriedWeight_all, carriedWeight_max);
+    Format(text, MAX_KEY_HINT_TEXT_LEN, "%s%T\n", text, "phrase_inventory", to_client, GetCarriedWeight(client), cv_inv_maxcarry);
 }
 
 void AddNewLine_Player_Status(int client, int to_client, char[] text)
@@ -607,12 +632,54 @@ stock bool IsInfected(int client, float &time_infected_end, float time_now=0.0)
     // return GetEntDataFloat(client, g_offset[O_InfectedStart]) > 0.0 && FloatCompare(GetEntDataFloat(client, g_offset[O_InfectedEnd]), GetGameTime()) == 1;
 }
 
+// time_infected_end 实测并不完全准确, 会稍微晚几秒才完全恢复视力
 stock bool IsVaccineEffect(int client, float &time_blindness_end, float time_now=0.0)
 {
     // return RunEntVScriptBool(client, "IsPartialBlindnessActive()");
-    time_blindness_end = GetEntDataFloat(client, g_offset[O_Blindness]);
+    time_blindness_end = GetEntDataFloat(client, g_offset[O_BlindnessEnd]);
     return FloatCompare(time_blindness_end, (time_now == 0.0 ? GetEngineTime() : time_now)) == 1;
 }
+
+stock int GetWeapon_Clip1_Remaining(int weapon)
+{
+    return GetEntData(weapon, g_offset[O_Clip]);
+}
+
+stock int GetWeapon_ClipBK_Remaining(int client, int weapon)
+{
+    return GetEntData(client, g_offset[O_Ammo] + GetEntData(weapon, g_offset[O_Type]) * 4);
+}
+
+stock int GetInventory1CarriedWeight(int client)
+{
+    return GetEntData(client, g_offset[O_CarriedWeight]);
+}
+
+stock int GetAmmoCarriedWeight(int client)
+{
+    static int weigth, i;
+    weigth = 0;
+    for(i=O_AMMO_9MM; i<O_AMMO_Grenade; ++i)
+    {
+        weigth += GetEntData(client, g_offset[O_Ammo] + i * 4) * cv_inv_ammoweight;
+    }
+
+    // O_AMMO_Grenade | O_AMMO_Molotov | O_AMMO_TNT | 已经计算在 1 号背包中
+    // weigth += GetEntData(client, g_offset[O_Ammo] + i * 4) * 100;
+
+    for(i=O_AMMO_ARROW; i<O_AMMO_Total; ++i)
+    {
+        weigth += GetEntData(client, g_offset[O_Ammo] + i * 4) * cv_inv_ammoweight;
+    }
+
+    return weigth;
+}
+
+stock int GetCarriedWeight(int client)
+{
+    return GetInventory1CarriedWeight(client) + GetAmmoCarriedWeight(client);
+}
+
 
 // By Dysphie (Player Pings)
 // @return Entity index or -1 for no collision.
@@ -684,9 +751,8 @@ stock bool checkClientPerf(int client, int bit_info)
 stock bool IsZombie(char[] classname)
 {
     // npc_nmrih_shamblerzombie  |  npc_nmrih_runnerzombie  |  npc_nmrih_kidzombie  |  npc_nmrih_turnedzombie
-    return !strncmp(classname, "npc_nmrih_", 10);
-    // StrContains(classname, "zombie") != -1;
-    // return strncmp(classname, "npc_nmrih_", 10) == 0 && StrContains(classname, "zombie", false) != -1;
+    return ! strncmp(classname, "npc_nmrih_", 10);
+    // return ! strncmp(classname, "npc_nmrih_", 10) && StrContains(classname, "zombie", false) != -1;
 }
 
 void Send_Message_Text(int client, char[] text)

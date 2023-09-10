@@ -56,7 +56,6 @@
 	"phrase_clip"
 	{
 		"#format"		"{1:d},{2:d}"
-		// "#format"		"{1:d},{2:d},{3:d}"
 		"en"			"Ammo: {1} / {2}"
 		"chi"			"弹药: {1} / {2}"
 		"zho"			"彈藥: {1} / {2}"
@@ -65,7 +64,6 @@
 	"phrase_inventory"
 	{
 		"#format"		"{1:d},{2:d}"
-		// "#format"		"{1:d},{2:d},{3:d},{4:d}"
 		"en"			"Inventory: {1} / {2}"
 		"chi"			"负重: {1} / {2}"
 		"zho"			"負重: {1} / {2}"
@@ -104,8 +102,8 @@
 	{
 		"#format"		"{1:.0f}"
 		"en"			"Bleary({1}) "
-		"chi"			"近视({1}) "
-		"zho"			"近視({1}) "
+		"chi"			"视线模糊({1}) "
+		"zho"			"視線模糊({1}) "
 	}
 
 	"phrase_status_none"
