@@ -14,7 +14,7 @@
 #define MAXPLAYERS                          9
 
 #define PLUGIN_NAME                         "HUD"
-#define PLUGIN_VERSION                      "v1.1.0"
+#define PLUGIN_VERSION                      "v1.1.1"
 #define PLUGIN_DESCRIPTION                  "Show data in HUD (KeyHintText)"
 #define PREFIX_CV                           "sm_hud"
 #define PREFIX_MESSAGE                      "[HUD] By F1F88"
@@ -61,6 +61,7 @@ enum
     O_Bleed,
     O_InfectedStart,
     O_InfectedEnd,
+    O_Blindness,
     O_Stamina,
     O_ActiveWeapon,
     O_Ammo,
@@ -87,9 +88,6 @@ float       cv_inv_maxcarry
             , cv_target_range
             , cv_trace_width;
 
-float       g_vaccine_effect_start_time[MAXPLAYERS + 1]
-            , g_vaccine_effect_duration[MAXPLAYERS + 1];
-
 Handle      g_timer;
 Cookie      g_cookie;
 
@@ -112,6 +110,11 @@ public APLRes AskPluginLoad2(Handle myself, bool late, char[] error, int err_max
     if( (g_offset[O_InfectedEnd]    = FindSendPropInfo("CNMRiH_Player", "m_flInfectionDeathTime")) < 1 )
     {
         strcopy(error, err_max,     "Can't find offset 'CNMRiH_Player::m_flInfectionDeathTime'!");
+        return APLRes_Failure;
+    }
+    if( (g_offset[O_Blindness]      = FindSendPropInfo("CNMRiH_Player", "IsPartialBlindnessActive")) < 1 )
+    {
+        strcopy(error, err_max,     "Can't find offset 'CNMRiH_Player::IsPartialBlindnessActive'!");
         return APLRes_Failure;
     }
     if( (g_offset[O_Stamina]        = FindSendPropInfo("CNMRiH_Player", "m_flStamina")) < 1 )
@@ -191,7 +194,6 @@ public void OnPluginStart()
     cv_inv_maxcarry = convar.FloatValue;
     AutoExecConfig(true, PLUGIN_NAME);
 
-    HookEvent("vaccine_taken",  On_vaccine_taken,   EventHookMode_Post);
     HookEvent("player_spawn",   On_player_spawn,    EventHookMode_Post);
 
     g_cookie = new Cookie(PLUGIN_NAME..." By F1F88", PLUGIN_NAME..." client preference", CookieAccess_Private);
@@ -256,20 +258,7 @@ public void OnClientPutInServer(int client)
 
 void On_player_spawn(Event event, const char[] name, bool dontBroadcast)
 {
-    int client = GetClientOfUserId(GetEventInt(event, "userid"));
-    g_vaccine_effect_start_time[client] = 0.0;
-    g_vaccine_effect_duration[client] = 0.0;
-}
-
-// 注射疫苗
-void On_vaccine_taken(Event event, const char[] name, bool dontBroadcast)
-{
-    if( event.GetBool("effect") )
-    {
-        int client = GetClientOfUserId(event.GetInt("userid"));
-        g_vaccine_effect_start_time[client] = GetGameTime();
-        g_vaccine_effect_duration[client] = event.GetFloat("effect_duration");
-    }
+//     int client = GetClientOfUserId(GetEventInt(event, "userid"));
 }
 
 // ========================================================================================================================================================================
@@ -450,14 +439,11 @@ void AddNewLine_Player_Inventory(int client, int to_client, char[] text)
 
 void AddNewLine_Player_Status(int client, int to_client, char[] text)
 {
-    static float    time_now, time_vaccine_effect_remaining;
-    static bool     is_following, is_vaccine_effect;
+    static float    time_now, time_infected_end, time_blindness_end;
+    static bool     is_following;
 
     time_now = GetGameTime();
-    time_vaccine_effect_remaining = time_now - g_vaccine_effect_start_time[client];
-
     is_following = false;
-    is_vaccine_effect = !FloatCompare(g_vaccine_effect_start_time[client], 0.0) ? false : FloatCompare( time_vaccine_effect_remaining, g_vaccine_effect_duration[client] ) >= 0;
 
     if( IsBleeding(client) )
     {
@@ -465,28 +451,28 @@ void AddNewLine_Player_Status(int client, int to_client, char[] text)
         is_following = true;
     }
 
-    if( IsInfected(client) )
+    if( IsInfected(client, time_infected_end, time_now) )
     {
         if( is_following )
         {
-            Format(text, MAX_KEY_HINT_TEXT_LEN, "%s%T%T", text, "phrase_status_delimiter", to_client, "phrase_status_infected", to_client, GetEntDataFloat(client, g_offset[O_InfectedEnd]) - time_now);
+            Format(text, MAX_KEY_HINT_TEXT_LEN, "%s%T%T", text, "phrase_status_delimiter", to_client, "phrase_status_infected", to_client, time_infected_end - time_now);
         }
         else
         {
-            Format(text, MAX_KEY_HINT_TEXT_LEN, "%s%T%T", text, "phrase_status_label", to_client, "phrase_status_infected", to_client, GetEntDataFloat(client, g_offset[O_InfectedEnd]) - time_now);
+            Format(text, MAX_KEY_HINT_TEXT_LEN, "%s%T%T", text, "phrase_status_label", to_client, "phrase_status_infected", to_client, time_infected_end - time_now);
             is_following = true;
         }
     }
 
-    if( is_vaccine_effect )
+    if( IsVaccineEffect(client, time_blindness_end, time_now) )
     {
         if( is_following )
         {
-            Format(text, MAX_KEY_HINT_TEXT_LEN, "%s%T%T", text, "phrase_status_delimiter", to_client, "phrase_status_vaccine_effect", to_client, time_vaccine_effect_remaining);
+            Format(text, MAX_KEY_HINT_TEXT_LEN, "%s%T%T", text, "phrase_status_delimiter", to_client, "phrase_status_vaccine_effect", to_client, time_blindness_end - time_now);
         }
         else
         {
-            Format(text, MAX_KEY_HINT_TEXT_LEN, "%s%T%T", text, "phrase_status_label", to_client, "phrase_status_vaccine_effect", to_client, time_vaccine_effect_remaining);
+            Format(text, MAX_KEY_HINT_TEXT_LEN, "%s%T%T", text, "phrase_status_label", to_client, "phrase_status_vaccine_effect", to_client, time_blindness_end - time_now);
             is_following = true;
         }
     }
@@ -523,7 +509,7 @@ void AddNewLine_Zombie_Name(int to_client, char[] zombie_classname, char[] text)
 
 void AddNweLine_Zombie_Health(int entity, int to_client, char[] text)
 {
-    Format(text, MAX_KEY_HINT_TEXT_LEN, "%s%T\n", text, "phrase_hp", to_client, GetEntProp(entity, Prop_Data, "m_iHealth", 1));
+    Format(text, MAX_KEY_HINT_TEXT_LEN, "%s%T\n", text, "phrase_hp", to_client, GetEntProp(entity, Prop_Data, "m_iHealth"));
 }
 
 
@@ -614,9 +600,18 @@ stock bool IsBleeding(int client)
     return GetEntData(client, g_offset[O_Bleed], 1) == 1;
 }
 
-stock bool IsInfected(int client)
+stock bool IsInfected(int client, float &time_infected_end, float time_now=0.0)
 {
-    return GetEntDataFloat(client, g_offset[O_InfectedStart]) > 0.0 && FloatCompare(GetEntDataFloat(client, g_offset[O_InfectedEnd]), GetGameTime()) == 1;
+    time_infected_end = GetEntDataFloat(client, g_offset[O_InfectedEnd]);
+    return FloatCompare(time_infected_end, (time_now == 0.0 ? GetEngineTime() : time_now)) == 1;
+    // return GetEntDataFloat(client, g_offset[O_InfectedStart]) > 0.0 && FloatCompare(GetEntDataFloat(client, g_offset[O_InfectedEnd]), GetGameTime()) == 1;
+}
+
+stock bool IsVaccineEffect(int client, float &time_blindness_end, float time_now=0.0)
+{
+    // return RunEntVScriptBool(client, "IsPartialBlindnessActive()");
+    time_blindness_end = GetEntDataFloat(client, g_offset[O_Blindness]);
+    return FloatCompare(time_blindness_end, (time_now == 0.0 ? GetEngineTime() : time_now)) == 1;
 }
 
 // By Dysphie (Player Pings)
