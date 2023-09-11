@@ -15,7 +15,7 @@
 #define MAX_CLASSNAME                       32
 
 #define PLUGIN_NAME                         "HUD"
-#define PLUGIN_VERSION                      "v1.2.1"
+#define PLUGIN_VERSION                      "v1.2.3"
 #define PLUGIN_DESCRIPTION                  "Show data in HUD (KeyHintText)"
 #define PREFIX_CV                           "sm_hud"
 #define PREFIX_MESSAGE                      "[HUD] By F1F88"
@@ -327,8 +327,8 @@ void Frame_Send_All()
         {
             if( IsPlayerAlive(client) )
             {
-                Get_HUD_Text(client, client, text);
-                Send_Message_Text(client, text);
+                GetHUDText(client, client, text);
+                SendMessageText(client, text);
             }
             else if( CheckClientPerf(client, BIT_SHOW_AT_DEATH) )
             {
@@ -339,8 +339,8 @@ void Frame_Send_All()
                     target = GetObserverTarget(client);
                     if( target != client && target > 0 && target <= MaxClients && IsClientInGame(target) )
                     {
-                        Get_HUD_Text(target, client, text);
-                        Send_Message_Text(client, text);
+                        GetHUDText(target, client, text);
+                        SendMessageText(client, text);
                     }
                 }
             }
@@ -350,7 +350,7 @@ void Frame_Send_All()
     // PrintToServer(" size=%d | %f - %f = %f ", strlen(text), end, start, end-start);
 }
 
-void Get_HUD_Text(int client, int to_client, char[] text)
+void GetHUDText(int client, int to_client, char[] text)
 {
     text[0] = '\0';
     // strcopy(text, PREFIX_MESSAGE);
@@ -713,7 +713,7 @@ stock int GetAimEntity(int client)
     // Start with an accurate trace ray
     static Handle trace;
     static int entity;
-    trace = TR_TraceRayFilterEx(startPos, EndPos, MASK_VISIBLE, RayType_EndPoint, TraceFilter_AimEntity, client);
+    trace = TR_TraceRayFilterEx(startPos, EndPos, MASK_VISIBLE, RayType_EndPoint, TraceFilterAimEntity, client);
     entity = TR_GetEntityIndex(trace);
 
     delete trace;
@@ -735,7 +735,7 @@ stock int GetAimEntity(int client)
     hullMaxs[1] = cv_trace_width;
     hullMaxs[2] = cv_trace_width;
 
-    trace = TR_TraceHullFilterEx(startPos, EndPos, hullMins, hullMaxs, MASK_VISIBLE, TraceFilter_AimEntity, client);
+    trace = TR_TraceHullFilterEx(startPos, EndPos, hullMins, hullMaxs, MASK_VISIBLE, TraceFilterAimEntity, client);
     entity = TR_GetEntityIndex(trace);
     delete trace;
 
@@ -746,7 +746,7 @@ stock int GetAimEntity(int client)
     return -1;
 }
 
-stock bool TraceFilter_AimEntity(int entity, int contentMask, int ignore)
+stock bool TraceFilterAimEntity(int entity, int contentMask, int ignore)
 {
     return entity != ignore;
 }
@@ -773,7 +773,7 @@ stock bool IsZombie(char[] classname)
     // return ! strncmp(classname, "npc_nmrih_", 10) && StrContains(classname, "zombie", false) != -1;
 }
 
-void Send_Message_Text(int client, char[] text)
+void SendMessageText(int client, char[] text)
 {
     static Handle message;
     static int len;
@@ -782,7 +782,7 @@ void Send_Message_Text(int client, char[] text)
     if( len > 1 )
     {
         text[len - 1] = '\0';       // 删除换行符
-        Send_Message(client, text);
+        SendMessage(client, text);
         message = StartMessageOne("KeyHintText", client);
         BfWriteByte(message, 1);
         BfWriteString(message, text);
@@ -790,12 +790,12 @@ void Send_Message_Text(int client, char[] text)
     }
 }
 
-void Quick_Close_Message(int client)
+void QuickCloseMessage(int client)
 {
-    Send_Message(client, "");
+    SendMessage(client, "");
 }
 
-void Send_Message(int client, char[] text)
+void SendMessage(int client, char[] text)
 {
     static Handle message;
     message = StartMessageOne("KeyHintText", client);
@@ -815,22 +815,22 @@ void ShowMenuClientPrefs(int client, int at=0)
     menu_cookie.ExitBackButton = true;
     menu_cookie.SetTitle("%T   "...PLUGIN_VERSION..."\n \n%T\n ", "phrase_prefix_menu", client, "phrase_menu_title", client);
 
-    custom_add_item(menu_cookie, client, BIT_SHOW_ENABLED,          "phrase_menu_show_enabled");
-    custom_add_item(menu_cookie, client, BIT_SHOW_AT_DEATH,         "phrase_menu_at_death");
-    custom_add_item(menu_cookie, client, BIT_SHOW_SELF_NAME,        "phrase_menu_show_self_name");
-    custom_add_item(menu_cookie, client, BIT_SHOW_SELF_HEALTH,      "phrase_menu_show_self_health");
-    custom_add_item(menu_cookie, client, BIT_SHOW_SELF_STAMINA,     "phrase_menu_show_self_stamina");
-    custom_add_item(menu_cookie, client, BIT_SHOW_SELF_SPEED,       "phrase_menu_show_self_speed");
-    custom_add_item(menu_cookie, client, BIT_SHOW_SELF_CLIP,        "phrase_menu_show_self_clip");
-    custom_add_item(menu_cookie, client, BIT_SHOW_SELF_INVENTORY,   "phrase_menu_show_self_inventory");
-    custom_add_item(menu_cookie, client, BIT_SHOW_SELF_STATUS,      "phrase_menu_show_self_status");
-    custom_add_item(menu_cookie, client, BIT_SHOW_AIM,              "phrase_menu_show_aim");
-    custom_add_item(menu_cookie, client, BIT_SHOW_AIM_PLAYER,       "phrase_menu_show_aim_player");
-    custom_add_item(menu_cookie, client, BIT_SHOW_AIM_PLAYER_NAME,  "phrase_menu_show_aim_player_name");
-    custom_add_item(menu_cookie, client, BIT_SHOW_AIM_ZOMBIE,       "phrase_menu_show_aim_zombie");
-    custom_add_item(menu_cookie, client, BIT_SHOW_AIM_AMMO,         "phrase_menu_show_aim_ammo");
-    custom_add_item(menu_cookie, client, BIT_SHOW_AIM_ITEM,         "phrase_menu_show_aim_item");
-    custom_add_item(menu_cookie, client, BIT_SHOW_DIVIDER,          "phrase_menu_show_divider");
+    CustomAddItem(menu_cookie, client, BIT_SHOW_ENABLED,          "phrase_menu_show_enabled");
+    CustomAddItem(menu_cookie, client, BIT_SHOW_AT_DEATH,         "phrase_menu_at_death");
+    CustomAddItem(menu_cookie, client, BIT_SHOW_SELF_NAME,        "phrase_menu_show_self_name");
+    CustomAddItem(menu_cookie, client, BIT_SHOW_SELF_HEALTH,      "phrase_menu_show_self_health");
+    CustomAddItem(menu_cookie, client, BIT_SHOW_SELF_STAMINA,     "phrase_menu_show_self_stamina");
+    CustomAddItem(menu_cookie, client, BIT_SHOW_SELF_SPEED,       "phrase_menu_show_self_speed");
+    CustomAddItem(menu_cookie, client, BIT_SHOW_SELF_CLIP,        "phrase_menu_show_self_clip");
+    CustomAddItem(menu_cookie, client, BIT_SHOW_SELF_INVENTORY,   "phrase_menu_show_self_inventory");
+    CustomAddItem(menu_cookie, client, BIT_SHOW_SELF_STATUS,      "phrase_menu_show_self_status");
+    CustomAddItem(menu_cookie, client, BIT_SHOW_AIM,              "phrase_menu_show_aim");
+    CustomAddItem(menu_cookie, client, BIT_SHOW_AIM_PLAYER,       "phrase_menu_show_aim_player");
+    CustomAddItem(menu_cookie, client, BIT_SHOW_AIM_PLAYER_NAME,  "phrase_menu_show_aim_player_name");
+    CustomAddItem(menu_cookie, client, BIT_SHOW_AIM_ZOMBIE,       "phrase_menu_show_aim_zombie");
+    CustomAddItem(menu_cookie, client, BIT_SHOW_AIM_AMMO,         "phrase_menu_show_aim_ammo");
+    CustomAddItem(menu_cookie, client, BIT_SHOW_AIM_ITEM,         "phrase_menu_show_aim_item");
+    CustomAddItem(menu_cookie, client, BIT_SHOW_DIVIDER,          "phrase_menu_show_divider");
 
     menu_cookie.DisplayAt(client, at, 30);
 }
@@ -866,14 +866,14 @@ int MenuHandler_Cookies(Menu menu, MenuAction action, int param1, int param2)
 
             if( item_bit & BIT_SHOW_ENABLED && ! CheckClientPerf(param1, BIT_SHOW_ENABLED) )
             {
-                Quick_Close_Message(param1);
+                QuickCloseMessage(param1);
             }
         }
     }
     return 0;
 }
 
-void custom_add_item(Menu menu, int client, int bit_info, char[] phrase_key)
+void CustomAddItem(Menu menu, int client, int bit_info, char[] phrase_key)
 {
     char item_info[16], item_display[128];
 
