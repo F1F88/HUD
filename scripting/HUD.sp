@@ -323,14 +323,14 @@ void Frame_Send_All()
     // for(int i=0; i<=10; ++i)
     for( client=1; client<=MaxClients; ++client )
     {
-        if( IsClientInGame(client) && checkClientPerf(client, BIT_SHOW_ENABLED) )
+        if( IsClientInGame(client) && CheckClientPerf(client, BIT_SHOW_ENABLED) )
         {
             if( IsPlayerAlive(client) )
             {
                 Get_HUD_Text(client, client, text);
                 Send_Message_Text(client, text);
             }
-            else if( checkClientPerf(client, BIT_SHOW_AT_DEATH) )
+            else if( CheckClientPerf(client, BIT_SHOW_AT_DEATH) )
             {
                 static int observer_mode, target;
                 observer_mode = GetObserverMode(client);
@@ -354,13 +354,13 @@ void Get_HUD_Text(int client, int to_client, char[] text)
 {
     text[0] = '\0';
     // strcopy(text, PREFIX_MESSAGE);
-    if( checkClientPerf(to_client, BIT_SHOW_SELF_NAME) )
+    if( CheckClientPerf(to_client, BIT_SHOW_SELF_NAME) )
     {
         AddNewLine_Player_Name(client, client, text);       // 自己的 名称
     }
     AddText_Player(client, to_client, text);                // 自己的 数据
 
-    if( checkClientPerf(to_client, BIT_SHOW_AIM) )          // 瞄准的目标
+    if( CheckClientPerf(to_client, BIT_SHOW_AIM) )          // 瞄准的目标
     {
         static int aim_entity;
         static char classname[32];
@@ -373,10 +373,10 @@ void Get_HUD_Text(int client, int to_client, char[] text)
         }
         else if( aim_entity <= MaxClients )                 // 瞄准玩家
         {
-            if( IsClientInGame(aim_entity) && IsPlayerAlive(aim_entity) && checkClientPerf(to_client, BIT_SHOW_AIM_PLAYER) )
+            if( IsClientInGame(aim_entity) && IsPlayerAlive(aim_entity) && CheckClientPerf(to_client, BIT_SHOW_AIM_PLAYER) )
             {
                 AddNewLine_Divider(to_client, text);
-                if( checkClientPerf(to_client, BIT_SHOW_AIM_PLAYER_NAME) )
+                if( CheckClientPerf(to_client, BIT_SHOW_AIM_PLAYER_NAME) )
                 {
                     AddNewLine_Player_Name(aim_entity, to_client, text); // 目标玩家的 名称
                 }
@@ -503,7 +503,7 @@ void AddNewLine_Player_Status(int client, int to_client, char[] text)
 
 void AddNewLine_Divider(int to_client, char[] text)
 {
-    if( checkClientPerf(to_client, BIT_SHOW_DIVIDER) )
+    if( CheckClientPerf(to_client, BIT_SHOW_DIVIDER) )
     {
         Format(text, MAX_KEY_HINT_TEXT_LEN, "%s%T\n", text, "phrase_divider", to_client);
     }
@@ -530,31 +530,31 @@ void AddNweLine_Zombie_Health(int entity, int to_client, char[] text)
 stock void AddText_Player(int client, int to_client, char[] text)
 {
     // Todo: 支持皮肤名称
-    // if( checkClientPerf(to_client, BIT_SHOW_SELF_NAME) )        // 名称
+    // if( CheckClientPerf(to_client, BIT_SHOW_SELF_NAME) )        // 名称
     // {
     //     AddNewLine_Player_Name(client, to_client, text);
     // }
-    if( checkClientPerf(to_client, BIT_SHOW_SELF_HEALTH) )      // 血量
+    if( CheckClientPerf(to_client, BIT_SHOW_SELF_HEALTH) )      // 血量
     {
         AddNewLine_Player_Health(client, to_client, text);
     }
-    if( checkClientPerf(to_client, BIT_SHOW_SELF_STAMINA) )     // 体力
+    if( CheckClientPerf(to_client, BIT_SHOW_SELF_STAMINA) )     // 体力
     {
         AddNewLine_Player_Stamina(client, to_client, text);
     }
-    if( checkClientPerf(to_client, BIT_SHOW_SELF_SPEED) )       // 速度
+    if( CheckClientPerf(to_client, BIT_SHOW_SELF_SPEED) )       // 速度
     {
         AddNewLine_Speed(client, to_client, text);
     }
-    if( checkClientPerf(to_client, BIT_SHOW_SELF_CLIP) )        // 子弹
+    if( CheckClientPerf(to_client, BIT_SHOW_SELF_CLIP) )        // 子弹
     {
         AddNewLine_Player_Clip(client, to_client, text);
     }
-    if( checkClientPerf(to_client, BIT_SHOW_SELF_INVENTORY) )   // 库存负重
+    if( CheckClientPerf(to_client, BIT_SHOW_SELF_INVENTORY) )   // 库存负重
     {
         AddNewLine_Player_Inventory(client, to_client, text);
     }
-    if( checkClientPerf(to_client, BIT_SHOW_SELF_STATUS) )      // 状态 - 流血、感染、感染剩余、疫苗注射、疫苗近视剩余
+    if( CheckClientPerf(to_client, BIT_SHOW_SELF_STATUS) )      // 状态 - 流血、感染、感染剩余、疫苗注射、疫苗近视剩余
     {
         AddNewLine_Player_Status(client, to_client, text);
     }
@@ -563,7 +563,7 @@ stock void AddText_Player(int client, int to_client, char[] text)
 
 stock void AddText_Zombie(int client, int to_client, int entity, char[] classname, char[] text)
 {
-    if( checkClientPerf(to_client, BIT_SHOW_AIM_ZOMBIE) )
+    if( CheckClientPerf(to_client, BIT_SHOW_AIM_ZOMBIE) )
     {
         AddNewLine_Divider(to_client, text);
         AddNewLine_Zombie_Name(to_client, classname, text);
@@ -573,7 +573,7 @@ stock void AddText_Zombie(int client, int to_client, int entity, char[] classnam
 
 stock void AddText_Ammo(int entity, int to_client, char[] text)
 {
-    if( checkClientPerf(to_client, BIT_SHOW_AIM_AMMO) )
+    if( CheckClientPerf(to_client, BIT_SHOW_AIM_AMMO) )
     {
         AddNewLine_Divider(to_client, text);
 
@@ -593,7 +593,7 @@ stock void AddText_Ammo(int entity, int to_client, char[] text)
 
 stock void AddText_Item(int to_client, char[] phrase_key, char[] text)
 {
-    if( checkClientPerf(to_client, BIT_SHOW_AIM_ITEM) )
+    if( CheckClientPerf(to_client, BIT_SHOW_AIM_ITEM) )
     {
         if( TranslationPhraseExists(phrase_key) )
         {
@@ -761,7 +761,7 @@ stock void ForwardVector(const float vPos[3], const float vAng[3], float fDistan
     vReturn[2] += vDir[2] * fDistance;
 }
 
-stock bool checkClientPerf(int client, int bit_info)
+stock bool CheckClientPerf(int client, int bit_info)
 {
     return (g_client_cookie[client] & bit_info) != 0 ;
 }
@@ -788,10 +788,11 @@ void Send_Message_Text(int client, char[] text)
         BfWriteString(message, text);
         EndMessage();
     }
-    else
-    {
-        Send_Message(client, "");
-    }
+}
+
+void Quick_Close_Message(int client)
+{
+    Send_Message(client, "");
 }
 
 void Send_Message(int client, char[] text)
@@ -863,9 +864,9 @@ int MenuHandler_Cookies(Menu menu, MenuAction action, int param1, int param2)
 
             ShowMenuClientPrefs(param1, param2 / 7 * 7);
 
-            if( item_bit & BIT_SHOW_ENABLED && ! checkClientPerf(param1, BIT_SHOW_ENABLED) )
+            if( item_bit & BIT_SHOW_ENABLED && ! CheckClientPerf(param1, BIT_SHOW_ENABLED) )
             {
-                Send_Message_Text(param1, "");
+                Quick_Close_Message(param1);
             }
         }
     }
