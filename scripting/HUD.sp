@@ -237,7 +237,7 @@ public void On_ConVar_Change(ConVar convar, const char[] old_value, const char[]
     if( ! strcmp(convar_name, PREFIX_CV..."_enabled") )
     {
         cv_plugin_enabled = convar.BoolValue;
-        Global_Timer_On();
+        cv_plugin_enabled ? Global_Timer_On() : Global_Timer_Off();
     }
     else if( ! strcmp(convar_name, PREFIX_CV..."_always_show_status") )
     {
@@ -254,6 +254,7 @@ public void On_ConVar_Change(ConVar convar, const char[] old_value, const char[]
     else if( ! strcmp(convar_name, PREFIX_CV..."_update_interval") )
     {
         cv_update_interval = convar.FloatValue;
+        Global_Timer_Off();
         Global_Timer_On();
     }
     else if( ! strcmp(convar_name, PREFIX_CV..."_trace_range") )
@@ -276,7 +277,10 @@ public void On_ConVar_Change(ConVar convar, const char[] old_value, const char[]
 
 public void OnConfigsExecuted()
 {
-    Global_Timer_On();
+    if( cv_plugin_enabled )
+    {
+        Global_Timer_On();
+    }
 }
 
 public void OnClientPutInServer(int client)
@@ -292,13 +296,15 @@ void On_player_spawn(Event event, const char[] name, bool dontBroadcast)
 // ========================================================================================================================================================================
 void Global_Timer_On()
 {
-    if( cv_plugin_enabled )
+    Global_Timer_Off();
+    g_timer = CreateTimer(cv_update_interval, Timer_Global, _, TIMER_REPEAT);
+}
+
+void Global_Timer_Off()
+{
+    if( g_timer != null || g_timer != INVALID_HANDLE )
     {
-        if( g_timer != null || g_timer != INVALID_HANDLE )
-        {
-            CloseHandle(g_timer);
-        }
-        g_timer = CreateTimer(cv_update_interval, Timer_Global, _, TIMER_REPEAT);
+        CloseHandle(g_timer);
     }
 }
 
