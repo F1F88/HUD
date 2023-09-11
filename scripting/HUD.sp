@@ -15,7 +15,7 @@
 #define MAX_CLASSNAME                       32
 
 #define PLUGIN_NAME                         "HUD"
-#define PLUGIN_VERSION                      "v1.2.0"
+#define PLUGIN_VERSION                      "v1.2.1"
 #define PLUGIN_DESCRIPTION                  "Show data in HUD (KeyHintText)"
 #define PREFIX_CV                           "sm_hud"
 #define PREFIX_MESSAGE                      "[HUD] By F1F88"
@@ -84,8 +84,9 @@ enum
     O_InfectedEnd,      // 感染结束时间
     O_BlindnessEnd,     // 疫苗部分失明影响结束时间
     O_Stamina,          // 体力
-    O_Ammo,             // 弹药库
+    O_IsCharging,       // 是否在蓄力
     O_ActiveWeapon,     // 当前武器
+    O_Ammo,             // 弹药库
     O_CarriedWeight,    // 一号背包重量
     O_ObserverMode,     // 观察模式
     O_ObserverTarget,   // 观察的目标
@@ -101,7 +102,6 @@ int         g_offset[O_Total];              // 记录偏移量
 bool        cv_plugin_enabled
             , cv_always_show_status
             , cv_always_show_ammo
-            , cv_always_show_divider
             , cv_always_show_target;
 
 int         cv_inv_maxcarry
@@ -205,9 +205,7 @@ public void OnPluginStart()
     cv_always_show_ammo = convar.BoolValue;
     (convar = CreateConVar(PREFIX_CV..."_always_show_target",   "0",        "0 = 目标没有匹配的名称时不显示目标名称行. 1 = 即使目标没有匹配的名称也显示目标名称行", _, true, 0.0, true, 1.0)).AddChangeHook(On_ConVar_Change);
     cv_always_show_target = convar.BoolValue;
-    (convar = CreateConVar(PREFIX_CV..."_always_show_divider",  "0",        "0 = 没有目标时不显示分界线. 1 = 即使没有目标也显示分界线", _, true, 0.0, true, 1.0)).AddChangeHook(On_ConVar_Change);
-    cv_always_show_divider = convar.BoolValue;
-    (convar = CreateConVar(PREFIX_CV..."_update_interval",      "0.25",     "越小刷新越快, 性能消耗越大, 占用的网络带宽也越多。单位-秒", _, true, 0.01)).AddChangeHook(On_ConVar_Change);
+    (convar = CreateConVar(PREFIX_CV..."_update_interval",      "0.20",     "越小刷新越快, 性能消耗越大, 占用的网络带宽也越多。单位-秒", _, true, 0.01)).AddChangeHook(On_ConVar_Change);
     cv_update_interval = convar.FloatValue;
     (convar = CreateConVar(PREFIX_CV..."_trace_range",          "1024.0",   "The maximum reach of the player target trace in game units", _, true, 0.1)).AddChangeHook(On_ConVar_Change);
     cv_target_range = convar.FloatValue;
@@ -258,7 +256,7 @@ public void On_ConVar_Change(ConVar convar, const char[] old_value, const char[]
         cv_update_interval = convar.FloatValue;
         Global_Timer_On();
     }
-    else if( ! strcmp(convar_name, PREFIX_CV..."_target_range") )
+    else if( ! strcmp(convar_name, PREFIX_CV..."_trace_range") )
     {
         cv_target_range = convar.FloatValue;
     }
@@ -335,10 +333,10 @@ void Frame_Send_All()
             else if( checkClientPerf(client, BIT_SHOW_AT_DEATH) )
             {
                 static int observer_mode, target;
-                observer_mode = GetEntData(client, g_offset[O_ObserverMode]);
+                observer_mode = GetObserverMode(client);
                 if( observer_mode == OBS_MODE_IN_EYE || observer_mode == OBS_MODE_CHASE || observer_mode == OBS_MODE_POI )
                 {
-                    target = GetEntDataEnt2(client, g_offset[O_ObserverTarget]);
+                    target = GetObserverTarget(client);
                     if( target != client && target > 0 && target <= MaxClients && IsClientInGame(target) )
                     {
                         Get_HUD_Text(target, client, text);
@@ -371,10 +369,6 @@ void Get_HUD_Text(int client, int to_client, char[] text)
 
         if( aim_entity <= 0 )                               // 瞄准 世界 或 无效目标
         {
-            if( cv_always_show_divider )
-            {
-                AddNewLine_Divider(to_client, text);
-            }
             return ;
         }
         else if( aim_entity <= MaxClients )                 // 瞄准玩家
@@ -419,37 +413,32 @@ void AddNewLine_Player_Health(int client, int to_client, char[] text)
 
 void AddNewLine_Player_Stamina(int client, int to_client, char[] text)
 {
-    static float stamina;
-
-    stamina = GetEntDataFloat(client, g_offset[O_Stamina]);
-
-    Format(text, MAX_KEY_HINT_TEXT_LEN, "%s%T\n", text, "phrase_stamina", to_client, stamina);
+    Format(text, MAX_KEY_HINT_TEXT_LEN, "%s%T\n", text, "phrase_stamina", to_client, GetStamina(client));
 }
 
-void AddNewLine_Speed(int entity, int to_client, char[] text)
+void AddNewLine_Speed(int client, int to_client, char[] text)
 {
-    static float speed, vec[3];
-
-    GetEntPropVector(entity, Prop_Data, "m_vecVelocity", vec);
-    vec[0] *= vec[0];
-    vec[1] *= vec[1];
-    vec[2] *= vec[2];
-    speed = SquareRoot(vec[0] + vec[1] + vec[2]);
-
-    Format(text, MAX_KEY_HINT_TEXT_LEN, "%s%T\n", text, "phrase_speed", to_client, speed);
+    Format(text, MAX_KEY_HINT_TEXT_LEN, "%s%T\n", text, "phrase_speed", to_client, GetSpeed(client));
 }
 
 void AddNewLine_Player_Clip(int client, int to_client, char[] text)
 {
-    static int weapon, weapon_clip_remaining, backpack_remaining;
+    static int weapon, ammo_clip1, ammo_clip_backpack;
 
-    weapon = GetEntDataEnt2(client, g_offset[O_ActiveWeapon]);
-    if(
-        IsValidEntity(weapon)
-        && ( weapon_clip_remaining = GetWeapon_Clip1_Remaining(weapon) ) >= 0
-        && ( backpack_remaining = GetWeapon_ClipBK_Remaining(client, weapon) ) >= 0
-    ) {
-        Format(text, MAX_KEY_HINT_TEXT_LEN, "%s%T\n", text, "phrase_clip", to_client, weapon_clip_remaining, backpack_remaining);
+    weapon = GetActiveWeapon(client);
+
+    if( IsValidEntity(weapon) )
+    {
+        ammo_clip1 = GetWeapon_Clip1_Remaining(weapon);
+        ammo_clip_backpack = GetWeapon_ClipBK_Remaining(client, weapon);
+        if( ammo_clip1 >= 0 && ammo_clip_backpack >= 0)
+        {
+            Format(text, MAX_KEY_HINT_TEXT_LEN, "%s%T\n", text, "phrase_clip", to_client, ammo_clip1, ammo_clip_backpack);
+        }
+        else if( cv_always_show_ammo )
+        {
+            Format(text, MAX_KEY_HINT_TEXT_LEN, "%s%T\n", text, "phrase_clip", to_client, 0, 0);
+        }
     }
     else if( cv_always_show_ammo )
     {
@@ -489,7 +478,7 @@ void AddNewLine_Player_Status(int client, int to_client, char[] text)
         }
     }
 
-    if( IsVaccineEffect(client, time_blindness_end, time_now) )
+    if( IsBlindness(client, time_blindness_end, time_now) )
     {
         if( is_following )
         {
@@ -633,11 +622,30 @@ stock bool IsInfected(int client, float &time_infected_end, float time_now=0.0)
 }
 
 // time_infected_end 实测并不完全准确, 会稍微晚几秒才完全恢复视力
-stock bool IsVaccineEffect(int client, float &time_blindness_end, float time_now=0.0)
+stock bool IsBlindness(int client, float &time_blindness_end, float time_now=0.0)
 {
     // return RunEntVScriptBool(client, "IsPartialBlindnessActive()");
     time_blindness_end = GetEntDataFloat(client, g_offset[O_BlindnessEnd]);
     return FloatCompare(time_blindness_end, (time_now == 0.0 ? GetEngineTime() : time_now)) == 1;
+}
+
+stock float GetStamina(int client)
+{
+    return GetEntDataFloat(client, g_offset[O_Stamina]);
+}
+
+stock float GetSpeed(int client, float vec[3]={})
+{
+    GetEntPropVector(client, Prop_Data, "m_vecVelocity", vec);
+    vec[0] *= vec[0];
+    vec[1] *= vec[1];
+    vec[2] *= vec[2];
+    return SquareRoot(vec[0] + vec[1] + vec[2]);
+}
+
+stock int GetActiveWeapon(int client)
+{
+    return GetEntDataEnt2(client, g_offset[O_ActiveWeapon]);
 }
 
 stock int GetWeapon_Clip1_Remaining(int weapon)
@@ -678,6 +686,16 @@ stock int GetAmmoCarriedWeight(int client)
 stock int GetCarriedWeight(int client)
 {
     return GetInventory1CarriedWeight(client) + GetAmmoCarriedWeight(client);
+}
+
+stock int GetObserverMode(int client)
+{
+    return GetEntData(client, g_offset[O_ObserverMode]);
+}
+
+stock int GetObserverTarget(int client)
+{
+    return GetEntDataEnt2(client, g_offset[O_ObserverTarget]);
 }
 
 
