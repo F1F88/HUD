@@ -218,8 +218,6 @@ public void OnPluginStart()
 
     AutoExecConfig(true, PLUGIN_NAME);
 
-    HookEvent("player_spawn",   On_player_spawn,    EventHookMode_Post);
-
     g_cookie = new Cookie(PLUGIN_NAME..." By F1F88", PLUGIN_NAME..." client preference", CookieAccess_Private);
     SetCookieMenuItem(CustomCookieMenu, 0, "HUD");
 }
@@ -288,25 +286,7 @@ public void OnClientPutInServer(int client)
     g_client_cookie[client] = g_cookie.GetInt(client, BIT_DEFAULT);
 }
 
-void On_player_spawn(Event event, const char[] name, bool dontBroadcast)
-{
-//     int client = GetClientOfUserId(GetEventInt(event, "userid"));
-}
-
 // ========================================================================================================================================================================
-void Global_Timer_On()
-{
-    Global_Timer_Off();
-    g_timer = CreateTimer(cv_update_interval, Timer_Global, _, TIMER_REPEAT);
-}
-
-void Global_Timer_Off()
-{
-    if( g_timer != null || g_timer != INVALID_HANDLE )
-    {
-        CloseHandle(g_timer);
-    }
-}
 
 Action Timer_Global(Handle timer)
 {
@@ -406,6 +386,90 @@ void GetHUDText(int client, int to_client, char[] text)
         }
     }
 }
+
+// ========================================================================================================================================================================
+
+stock void AddText_Player(int client, int to_client, char[] text)
+{
+    // Todo: 支持皮肤名称
+    // if( CheckClientPerf(to_client, BIT_SHOW_SELF_NAME) )        // 名称
+    // {
+    //     AddNewLine_Player_Name(client, to_client, text);
+    // }
+    if( CheckClientPerf(to_client, BIT_SHOW_SELF_HEALTH) )      // 血量
+    {
+        AddNewLine_Player_Health(client, to_client, text);
+    }
+    if( CheckClientPerf(to_client, BIT_SHOW_SELF_STAMINA) )     // 体力
+    {
+        AddNewLine_Player_Stamina(client, to_client, text);
+    }
+    if( CheckClientPerf(to_client, BIT_SHOW_SELF_SPEED) )       // 速度
+    {
+        AddNewLine_Speed(client, to_client, text);
+    }
+    if( CheckClientPerf(to_client, BIT_SHOW_SELF_CLIP) )        // 子弹
+    {
+        AddNewLine_Player_Clip(client, to_client, text);
+    }
+    if( CheckClientPerf(to_client, BIT_SHOW_SELF_INVENTORY) )   // 库存负重
+    {
+        AddNewLine_Player_Inventory(client, to_client, text);
+    }
+    if( CheckClientPerf(to_client, BIT_SHOW_SELF_STATUS) )      // 状态 - 流血、感染、感染剩余、疫苗注射、疫苗近视剩余
+    {
+        AddNewLine_Player_Status(client, to_client, text);
+    }
+}
+
+stock void AddText_Zombie(int client, int to_client, int entity, char[] classname, char[] text)
+{
+    if( CheckClientPerf(to_client, BIT_SHOW_AIM_ZOMBIE) )
+    {
+        AddNewLine_Divider(to_client, text);
+        AddNewLine_Zombie_Name(to_client, classname, text);
+        AddNweLine_Zombie_Health(entity, to_client, text);
+    }
+}
+
+stock void AddText_Ammo(int entity, int to_client, char[] text)
+{
+    if( CheckClientPerf(to_client, BIT_SHOW_AIM_AMMO) )
+    {
+        AddNewLine_Divider(to_client, text);
+
+        static char model[PLATFORM_MAX_PATH];
+        GetEntPropString(entity, Prop_Data, "m_ModelName", model, PLATFORM_MAX_PATH);
+
+        if( TranslationPhraseExists(model) )
+        {
+            Format(text, MAX_KEY_HINT_TEXT_LEN, "%s%T\n", text, "phrase_ammo", to_client, model, to_client);
+        }
+        else
+        {
+            Format(text, MAX_KEY_HINT_TEXT_LEN, "%s%T\n", text, "phrase_ammo", to_client, "phrase_ammo_default", to_client);
+        }
+    }
+}
+
+stock void AddText_Item(int to_client, char[] phrase_key, char[] text)
+{
+    if( CheckClientPerf(to_client, BIT_SHOW_AIM_ITEM) )
+    {
+        if( TranslationPhraseExists(phrase_key) )
+        {
+            AddNewLine_Divider(to_client, text);
+            Format(text, MAX_KEY_HINT_TEXT_LEN, "%s%T\n", text, "phrase_item_phrase", to_client, phrase_key, to_client);
+        }
+        else if( cv_always_show_target )
+        {
+            AddNewLine_Divider(to_client, text);
+            Format(text, MAX_KEY_HINT_TEXT_LEN, "%s%T\n", text, "phrase_item_string", to_client, phrase_key);
+        }
+    }
+}
+
+// ========================================================================================================================================================================
 
 void AddNewLine_Player_Name(int client, int to_client, char[] text)
 {
@@ -532,88 +596,7 @@ void AddNweLine_Zombie_Health(int entity, int to_client, char[] text)
     Format(text, MAX_KEY_HINT_TEXT_LEN, "%s%T\n", text, "phrase_hp", to_client, GetEntProp(entity, Prop_Data, "m_iHealth"));
 }
 
-
-stock void AddText_Player(int client, int to_client, char[] text)
-{
-    // Todo: 支持皮肤名称
-    // if( CheckClientPerf(to_client, BIT_SHOW_SELF_NAME) )        // 名称
-    // {
-    //     AddNewLine_Player_Name(client, to_client, text);
-    // }
-    if( CheckClientPerf(to_client, BIT_SHOW_SELF_HEALTH) )      // 血量
-    {
-        AddNewLine_Player_Health(client, to_client, text);
-    }
-    if( CheckClientPerf(to_client, BIT_SHOW_SELF_STAMINA) )     // 体力
-    {
-        AddNewLine_Player_Stamina(client, to_client, text);
-    }
-    if( CheckClientPerf(to_client, BIT_SHOW_SELF_SPEED) )       // 速度
-    {
-        AddNewLine_Speed(client, to_client, text);
-    }
-    if( CheckClientPerf(to_client, BIT_SHOW_SELF_CLIP) )        // 子弹
-    {
-        AddNewLine_Player_Clip(client, to_client, text);
-    }
-    if( CheckClientPerf(to_client, BIT_SHOW_SELF_INVENTORY) )   // 库存负重
-    {
-        AddNewLine_Player_Inventory(client, to_client, text);
-    }
-    if( CheckClientPerf(to_client, BIT_SHOW_SELF_STATUS) )      // 状态 - 流血、感染、感染剩余、疫苗注射、疫苗近视剩余
-    {
-        AddNewLine_Player_Status(client, to_client, text);
-    }
-}
-
-
-stock void AddText_Zombie(int client, int to_client, int entity, char[] classname, char[] text)
-{
-    if( CheckClientPerf(to_client, BIT_SHOW_AIM_ZOMBIE) )
-    {
-        AddNewLine_Divider(to_client, text);
-        AddNewLine_Zombie_Name(to_client, classname, text);
-        AddNweLine_Zombie_Health(entity, to_client, text);
-    }
-}
-
-stock void AddText_Ammo(int entity, int to_client, char[] text)
-{
-    if( CheckClientPerf(to_client, BIT_SHOW_AIM_AMMO) )
-    {
-        AddNewLine_Divider(to_client, text);
-
-        static char model[PLATFORM_MAX_PATH];
-        GetEntPropString(entity, Prop_Data, "m_ModelName", model, PLATFORM_MAX_PATH);
-
-        if( TranslationPhraseExists(model) )
-        {
-            Format(text, MAX_KEY_HINT_TEXT_LEN, "%s%T\n", text, "phrase_ammo", to_client, model, to_client);
-        }
-        else
-        {
-            Format(text, MAX_KEY_HINT_TEXT_LEN, "%s%T\n", text, "phrase_ammo", to_client, "phrase_ammo_default", to_client);
-        }
-    }
-}
-
-stock void AddText_Item(int to_client, char[] phrase_key, char[] text)
-{
-    if( CheckClientPerf(to_client, BIT_SHOW_AIM_ITEM) )
-    {
-        if( TranslationPhraseExists(phrase_key) )
-        {
-            AddNewLine_Divider(to_client, text);
-            Format(text, MAX_KEY_HINT_TEXT_LEN, "%s%T\n", text, "phrase_item_phrase", to_client, phrase_key, to_client);
-        }
-        else if( cv_always_show_target )
-        {
-            AddNewLine_Divider(to_client, text);
-            Format(text, MAX_KEY_HINT_TEXT_LEN, "%s%T\n", text, "phrase_item_string", to_client, phrase_key);
-        }
-    }
-}
-
+// ========================================================================================================================================================================
 
 stock bool IsBleeding(int client)
 {
@@ -633,6 +616,13 @@ stock bool IsBlindness(int client, float &time_blindness_end, float time_now=0.0
     // return RunEntVScriptBool(client, "IsPartialBlindnessActive()");
     time_blindness_end = GetEntDataFloat(client, g_offset[O_BlindnessEnd]);
     return FloatCompare(time_blindness_end, (time_now == 0.0 ? GetEngineTime() : time_now)) == 1;
+}
+
+stock bool IsZombie(char[] classname)
+{
+    // npc_nmrih_shamblerzombie  |  npc_nmrih_runnerzombie  |  npc_nmrih_kidzombie  |  npc_nmrih_turnedzombie
+    return ! strncmp(classname, "npc_nmrih_", 10);
+    // return ! strncmp(classname, "npc_nmrih_", 10) && StrContains(classname, "zombie", false) != -1;
 }
 
 stock float GetStamina(int client)
@@ -767,17 +757,23 @@ stock void ForwardVector(const float vPos[3], const float vAng[3], float fDistan
     vReturn[2] += vDir[2] * fDistance;
 }
 
-stock bool CheckClientPerf(int client, int bit_info)
+// ========================================================================================================================================================================
+
+void Global_Timer_On()
 {
-    return (g_client_cookie[client] & bit_info) != 0 ;
+    Global_Timer_Off();
+    g_timer = CreateTimer(cv_update_interval, Timer_Global, _, TIMER_REPEAT);
 }
 
-stock bool IsZombie(char[] classname)
+void Global_Timer_Off()
 {
-    // npc_nmrih_shamblerzombie  |  npc_nmrih_runnerzombie  |  npc_nmrih_kidzombie  |  npc_nmrih_turnedzombie
-    return ! strncmp(classname, "npc_nmrih_", 10);
-    // return ! strncmp(classname, "npc_nmrih_", 10) && StrContains(classname, "zombie", false) != -1;
+    if( g_timer != null || g_timer != INVALID_HANDLE )
+    {
+        CloseHandle(g_timer);
+    }
 }
+
+// ========================================================================================================================================================================
 
 void SendMessageText(int client, char[] text)
 {
@@ -809,6 +805,8 @@ void SendMessage(int client, char[] text)
     BfWriteString(message, text);
     EndMessage();
 }
+
+// ========================================================================================================================================================================
 
 void CustomCookieMenu(int client, CookieMenuAction action, any info, char[] buffer, int maxlen)
 {
@@ -879,7 +877,7 @@ int MenuHandler_Cookies(Menu menu, MenuAction action, int param1, int param2)
     return 0;
 }
 
-void CustomAddItem(Menu menu, int client, int bit_info, char[] phrase_key)
+stock void CustomAddItem(Menu menu, int client, int bit_info, char[] phrase_key)
 {
     char item_info[16], item_display[128];
 
@@ -887,4 +885,9 @@ void CustomAddItem(Menu menu, int client, int bit_info, char[] phrase_key)
     IntToString(bit_info, item_info, sizeof(item_info));
 
     menu.AddItem(item_info, item_display, ITEMDRAW_DEFAULT);
+}
+
+stock bool CheckClientPerf(int client, int bit_info)
+{
+    return (g_client_cookie[client] & bit_info) != 0 ;
 }
