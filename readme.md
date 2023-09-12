@@ -6,17 +6,17 @@ This plugin can display the following data to HUD (KeyHintText)
 
 - Players' own
 
-    - health, stamina, speed, and inventory usage
+    - health, stamina, speed, ammo, inventory usage, status (bleeding, infected, vaccinated, blindness, partial blindness)
 
 - Targeted targets
 
-    - Target player's health, stamina, speed, and inventory usage
+    - Target player's health, stamina, speed, ammo, inventory usage, status (bleeding, infected, vaccinated, blindness, partial blindness)
 
     - Target zombie's type and health
 
-    - Type of target ammunition
+    - Target ammo box name
 
-    - Name of the target item
+    - Target item name
 
 Other:
 
