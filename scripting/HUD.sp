@@ -15,7 +15,7 @@
 #define MAX_CLASSNAME                       32
 
 #define PLUGIN_NAME                         "HUD"
-#define PLUGIN_VERSION                      "v1.2.5"
+#define PLUGIN_VERSION                      "v1.2.6"
 #define PLUGIN_DESCRIPTION                  "Show data in HUD (KeyHintText)"
 #define PREFIX_CV                           "sm_hud"
 #define PREFIX_MESSAGE                      "[HUD] By F1F88"
@@ -103,7 +103,8 @@ int         g_offset[O_Total];              // 记录偏移量
 // bool        g_plugin_late
 bool        cv_plugin_enabled
             , cv_always_show_status
-            , cv_always_show_target;
+            , cv_always_show_target
+            , cv_trace_hull;
 
 int         cv_inv_maxcarry
             , cv_inv_ammoweight;
@@ -111,6 +112,8 @@ int         cv_inv_maxcarry
 float       cv_update_interval
             , cv_target_range
             , cv_trace_width;
+
+float       g_hullMins[3], g_hullMaxs[3];
 
 Handle      g_timer;
 Cookie      g_cookie;
@@ -211,9 +214,11 @@ public void OnPluginStart()
     cv_always_show_target = convar.BoolValue;
     (convar = CreateConVar(PREFIX_CV..."_update_interval",      "0.20",     "越小刷新越快, 性能消耗越大, 占用的网络带宽也越多。单位-秒", _, true, 0.01)).AddChangeHook(On_ConVar_Change);
     cv_update_interval = convar.FloatValue;
-    (convar = CreateConVar(PREFIX_CV..."_trace_range",          "1024.0",   "The maximum reach of the player target trace in game units", _, true, 0.1)).AddChangeHook(On_ConVar_Change);
+    (convar = CreateConVar(PREFIX_CV..."_trace_range",          "1024.0",   "The maximum reach of the player target trace in game units", _, true, 32.0)).AddChangeHook(On_ConVar_Change);
     cv_target_range = convar.FloatValue;
-    (convar = CreateConVar(PREFIX_CV..."_trace_width",          "32.0",     "搜索目标的射线的宽度 | 捕获率低可以增加 | 捕获正确率低可以减少", _, true, 0.1)).AddChangeHook(On_ConVar_Change);
+    (convar = CreateConVar(PREFIX_CV..."_trace_hull",           "0",        "如果 trace ray 没有获取到目标, 使用 trace hull 再次尝试", _, true, 0.0, true, 1.0)).AddChangeHook(On_ConVar_Change);
+    cv_trace_hull = convar.BoolValue;
+    (convar = CreateConVar(PREFIX_CV..."_trace_width",          "16.0",     "二次搜索目标的射线的宽度", _, true, 0.1)).AddChangeHook(On_ConVar_Change);
     cv_trace_width = convar.FloatValue;
     (convar = FindConVar("inv_maxcarry")).AddChangeHook(On_ConVar_Change);
     cv_inv_maxcarry = convar.IntValue;
@@ -259,9 +264,14 @@ public void On_ConVar_Change(ConVar convar, const char[] old_value, const char[]
     {
         cv_target_range = convar.FloatValue;
     }
+    else if( ! strcmp(convar_name, PREFIX_CV..."_trace_hull") )
+    {
+        cv_trace_hull = convar.BoolValue;
+    }
     else if( ! strcmp(convar_name, PREFIX_CV..."_trace_width") )
     {
         cv_trace_width = convar.FloatValue;
+        SetHullSize();
     }
     else if( ! strcmp(convar_name, "inv_maxcarry") )
     {
@@ -277,6 +287,7 @@ public void OnConfigsExecuted()
 {
     if( cv_plugin_enabled )
     {
+        SetHullSize();
         Global_Timer_On();
     }
 }
@@ -704,38 +715,30 @@ stock int GetAimEntity(int client)
     ForwardVector(eyePos, eyeAng, 16.0, startPos);
     ForwardVector(eyePos, eyeAng, cv_target_range, EndPos);
 
-    // Start with an accurate trace ray
     static Handle trace;
     static int entity;
+
+    // Start with an accurate trace ray
     trace = TR_TraceRayFilterEx(startPos, EndPos, MASK_VISIBLE, RayType_EndPoint, TraceFilterAimEntity, client);
     entity = TR_GetEntityIndex(trace);
-
     delete trace;
 
-    // Check if we hit an entity with the ray ( not included world )
-    if( entity && IsValidEntity(entity) )
+    if( entity && IsValidEntity(entity) )   // Check if we hit an entity with the ray ( not included world )
     {
         return entity;
     }
 
-    // If we hit nothing, try again using a swept hull
-    static float hullMins[3], hullMaxs[3];
-
-    hullMins[0] = -cv_trace_width;
-    hullMins[1] = -cv_trace_width;
-    hullMins[2] = -cv_trace_width;
-
-    hullMaxs[0] = cv_trace_width;
-    hullMaxs[1] = cv_trace_width;
-    hullMaxs[2] = cv_trace_width;
-
-    trace = TR_TraceHullFilterEx(startPos, EndPos, hullMins, hullMaxs, MASK_VISIBLE, TraceFilterAimEntity, client);
-    entity = TR_GetEntityIndex(trace);
-    delete trace;
-
-    if( IsValidEntity(entity) ) // Including world
+    if( cv_trace_hull )
     {
-        return entity;
+        // If we hit nothing, try again using a swept hull
+        trace = TR_TraceHullFilterEx(startPos, EndPos, g_hullMins, g_hullMaxs, MASK_VISIBLE, TraceFilterAimEntity, client);
+        entity = TR_GetEntityIndex(trace);
+        delete trace;
+
+        if( IsValidEntity(entity) )         // Including world
+        {
+            return entity;
+        }
     }
     return -1;
 }
@@ -749,10 +752,20 @@ stock void ForwardVector(const float vPos[3], const float vAng[3], float fDistan
 {
     static float vDir[3];
     GetAngleVectors(vAng, vDir, NULL_VECTOR, NULL_VECTOR);
-    vReturn = vPos;
-    vReturn[0] += vDir[0] * fDistance;
-    vReturn[1] += vDir[1] * fDistance;
-    vReturn[2] += vDir[2] * fDistance;
+    vReturn[0] = vPos[0] + vDir[0] * fDistance;
+    vReturn[1] = vPos[1] + vDir[1] * fDistance;
+    vReturn[2] = vPos[2] + vDir[2] * fDistance;
+}
+
+stock void SetHullSize()
+{
+    g_hullMins[0] = -cv_trace_width;
+    g_hullMins[1] = -cv_trace_width;
+    g_hullMins[2] = -cv_trace_width;
+
+    g_hullMaxs[0] = cv_trace_width;
+    g_hullMaxs[1] = cv_trace_width;
+    g_hullMaxs[2] = cv_trace_width;
 }
 
 // ========================================================================================================================================================================
