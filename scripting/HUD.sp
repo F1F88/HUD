@@ -15,7 +15,7 @@
 #define MAX_CLASSNAME                       32
 
 #define PLUGIN_NAME                         "HUD"
-#define PLUGIN_VERSION                      "v1.3.0"
+#define PLUGIN_VERSION                      "v1.3.1"
 #define PLUGIN_DESCRIPTION                  "Show data in HUD (KeyHintText)"
 #define PREFIX_CV                           "sm_hud"
 #define PREFIX_MESSAGE                      "[HUD] By F1F88"
@@ -100,8 +100,8 @@ enum
 
 int         g_offset[O_Total];              // 记录偏移量
 
-// bool        g_plugin_late
-bool        cv_plugin_enabled
+bool        g_plugin_late
+            , cv_plugin_enabled
             , cv_always_show_status
             , cv_always_show_target
             , cv_trace_hull;
@@ -123,7 +123,7 @@ int         g_client_cookie[MAXPLAYERS + 1] = {BIT_DEFAULT, ...};
 
 public APLRes AskPluginLoad2(Handle myself, bool late, char[] error, int err_max)
 {
-    // g_plugin_late = late;
+    g_plugin_late = late;
     if( (g_offset[O_Bleed]          = FindSendPropInfo("CNMRiH_Player", "_bleedingOut")) < 1 )
     {
         strcopy(error, err_max,     "Can't find offset 'CNMRiH_Player::_bleedingOut'!");
@@ -234,6 +234,11 @@ public void OnPluginStart()
 
     g_cookie = new Cookie(PLUGIN_NAME..." By F1F88", PLUGIN_NAME..." client preference", CookieAccess_Private);
     SetCookieMenuItem(CustomCookieMenu, 0, "HUD");
+
+    if( g_plugin_late )
+    {
+        PluginLateSupport();
+    }
 }
 
 public void On_ConVar_Change(ConVar convar, const char[] old_value, const char[] new_value)
@@ -780,6 +785,18 @@ stock void SetHullSize()
 }
 
 // ========================================================================================================================================================================
+
+void PluginLateSupport()
+{
+    for(int client=1; client<=MaxClients; ++client)
+    {
+        if( IsClientInGame(client) )
+        {
+            g_client_cookie[client] = g_cookie.GetInt(client, BIT_DEFAULT);
+        }
+    }
+    g_plugin_late = false;
+}
 
 void Global_Timer_On()
 {
