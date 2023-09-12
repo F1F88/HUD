@@ -15,7 +15,7 @@
 #define MAX_CLASSNAME                       32
 
 #define PLUGIN_NAME                         "HUD"
-#define PLUGIN_VERSION                      "v1.2.6"
+#define PLUGIN_VERSION                      "v1.2.7"
 #define PLUGIN_DESCRIPTION                  "Show data in HUD (KeyHintText)"
 #define PREFIX_CV                           "sm_hud"
 #define PREFIX_MESSAGE                      "[HUD] By F1F88"
@@ -83,6 +83,7 @@ enum
     O_Bleed,            // 是否流血
     O_InfectedStart,    // 感染开始时间
     O_InfectedEnd,      // 感染结束时间
+    O_VACCINATED,       // 注射疫苗
     O_BlindnessEnd,     // 疫苗部分失明影响结束时间
     O_Stamina,          // 体力
     O_vecVelocity0,     // 移动速度
@@ -132,6 +133,11 @@ public APLRes AskPluginLoad2(Handle myself, bool late, char[] error, int err_max
     if( (g_offset[O_InfectedStart]  = FindSendPropInfo("CNMRiH_Player", "m_flInfectionTime")) < 1 )
     {
         strcopy(error, err_max,     "Can't find offset 'CNMRiH_Player::m_flInfectionTime'!");
+        return APLRes_Failure;
+    }
+    if( (g_offset[O_VACCINATED]     = FindSendPropInfo("CNMRiH_Player", "_vaccinated")) < 1 )
+    {
+        strcopy(error, err_max,     "Can't find offset 'CNMRiH_Player::_vaccinated'!");
         return APLRes_Failure;
     }
     if( (g_offset[O_InfectedEnd]    = FindSendPropInfo("CNMRiH_Player", "m_flInfectionDeathTime")) < 1 )
@@ -550,17 +556,21 @@ void AddNewLine_Player_Status(int client, int to_client, char[] text)
             is_following = true;
         }
     }
-
-    if( IsBlindness(client, time_blindness_end, time_now) )
+    else if( IsVaccinated(client) )
     {
         if( is_following )
         {
-            Format(text, MAX_KEY_HINT_TEXT_LEN, "%s%T%T", text, "phrase_status_delimiter", to_client, "phrase_status_vaccine_effect", to_client, time_blindness_end - time_now);
+            Format(text, MAX_KEY_HINT_TEXT_LEN, "%s%T%T", text, "phrase_status_delimiter", to_client, "phrase_status_vaccinated", to_client);
         }
         else
         {
-            Format(text, MAX_KEY_HINT_TEXT_LEN, "%s%T%T", text, "phrase_status_label", to_client, "phrase_status_vaccine_effect", to_client, time_blindness_end - time_now);
+            Format(text, MAX_KEY_HINT_TEXT_LEN, "%s%T%T", text, "phrase_status_label", to_client, "phrase_status_vaccinated", to_client);
             is_following = true;
+        }
+
+        if( IsBlindness(client, time_blindness_end, time_now) )
+        {
+            Format(text, MAX_KEY_HINT_TEXT_LEN, "%s%T%T", text, "phrase_status_delimiter", to_client, "phrase_status_vaccine_effect", to_client, time_blindness_end - time_now);
         }
     }
 
@@ -611,6 +621,11 @@ stock bool IsInfected(int client, float &time_infected_end, float time_now=0.0)
     time_infected_end = GetEntDataFloat(client, g_offset[O_InfectedEnd]);
     return FloatCompare(time_infected_end, (time_now == 0.0 ? GetEngineTime() : time_now)) == 1;
     // return GetEntDataFloat(client, g_offset[O_InfectedStart]) > 0.0 && FloatCompare(GetEntDataFloat(client, g_offset[O_InfectedEnd]), GetGameTime()) == 1;
+}
+
+stock bool IsVaccinated(int client)
+{
+    return GetEntData(client, g_offset[O_VACCINATED]) == 1;
 }
 
 // time_infected_end 实测并不完全准确, 会稍微晚几秒才完全恢复视力

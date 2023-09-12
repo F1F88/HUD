@@ -98,6 +98,13 @@
 		"zho"			"感染({1})"
 	}
 
+	"phrase_status_vaccinated"
+	{
+		"en"			"vaccinated"
+		"chi"			"免疫感染"
+		"zho"			"免疫感染"
+	}
+
 	"phrase_status_vaccine_effect"
 	{
 		"#format"		"{1:.0f}"
