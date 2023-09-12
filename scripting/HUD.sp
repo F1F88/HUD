@@ -15,7 +15,7 @@
 #define MAX_CLASSNAME                       32
 
 #define PLUGIN_NAME                         "HUD"
-#define PLUGIN_VERSION                      "v1.2.4"
+#define PLUGIN_VERSION                      "v1.2.5"
 #define PLUGIN_DESCRIPTION                  "Show data in HUD (KeyHintText)"
 #define PREFIX_CV                           "sm_hud"
 #define PREFIX_MESSAGE                      "[HUD] By F1F88"
@@ -103,7 +103,6 @@ int         g_offset[O_Total];              // 记录偏移量
 // bool        g_plugin_late
 bool        cv_plugin_enabled
             , cv_always_show_status
-            , cv_always_show_ammo
             , cv_always_show_target;
 
 int         cv_inv_maxcarry
@@ -208,8 +207,6 @@ public void OnPluginStart()
     cv_plugin_enabled = convar.BoolValue;
     (convar = CreateConVar(PREFIX_CV..."_always_show_status",   "0",        "0 = 没有特殊状态时不显示状态行. 1 = 即使没有特殊状态也显示状态行", _, true, 0.0, true, 1.0)).AddChangeHook(On_ConVar_Change);
     cv_always_show_status = convar.BoolValue;
-    (convar = CreateConVar(PREFIX_CV..."_always_show_ammo",     "0",        "0 = 持有武器没有弹夹时不显示弹药行. 1 = 即使持有武器没有弹夹也显示弹药行", _, true, 0.0, true, 1.0)).AddChangeHook(On_ConVar_Change);
-    cv_always_show_ammo = convar.BoolValue;
     (convar = CreateConVar(PREFIX_CV..."_always_show_target",   "0",        "0 = 目标没有匹配的名称时不显示目标名称行. 1 = 即使目标没有匹配的名称也显示目标名称行", _, true, 0.0, true, 1.0)).AddChangeHook(On_ConVar_Change);
     cv_always_show_target = convar.BoolValue;
     (convar = CreateConVar(PREFIX_CV..."_update_interval",      "0.20",     "越小刷新越快, 性能消耗越大, 占用的网络带宽也越多。单位-秒", _, true, 0.01)).AddChangeHook(On_ConVar_Change);
@@ -247,10 +244,6 @@ public void On_ConVar_Change(ConVar convar, const char[] old_value, const char[]
     else if( ! strcmp(convar_name, PREFIX_CV..."_always_show_status") )
     {
         cv_always_show_status = convar.BoolValue;
-    }
-    else if( ! strcmp(convar_name, PREFIX_CV..."_always_show_ammo") )
-    {
-        cv_always_show_ammo = convar.BoolValue;
     }
     else if( ! strcmp(convar_name, PREFIX_CV..."_always_show_target") )
     {
@@ -512,14 +505,6 @@ void AddNewLine_Player_Clip(int client, int to_client, char[] text)
         {
             Format(text, MAX_KEY_HINT_TEXT_LEN, "%s%T\n", text, "phrase_clip", to_client, ammo_clip1, ammo_clip_backpack);
         }
-        else if( cv_always_show_ammo )
-        {
-            Format(text, MAX_KEY_HINT_TEXT_LEN, "%s%T\n", text, "phrase_clip", to_client, 0, 0);
-        }
-    }
-    else if( cv_always_show_ammo )
-    {
-        Format(text, MAX_KEY_HINT_TEXT_LEN, "%s%T\n", text, "phrase_clip", to_client, 0, 0);
     }
 }
 
