@@ -15,7 +15,7 @@
 #define MAX_CLASSNAME                       32
 
 #define PLUGIN_NAME                         "HUD"
-#define PLUGIN_VERSION                      "v1.3.1"
+#define PLUGIN_VERSION                      "v1.3.2"
 #define PLUGIN_DESCRIPTION                  "Show data in HUD (KeyHintText)"
 #define PREFIX_CV                           "sm_hud"
 #define PREFIX_MESSAGE                      "[HUD] By F1F88"
@@ -324,9 +324,9 @@ void Frame_Send_All()
 {
     static int client;
     static char text[MAX_KEY_HINT_TEXT_LEN];
-    static float start, end;
+    // static float start, end;
 
-    start = GetEngineTime();
+    // start = GetEngineTime();
     // for(int i=0; i<=20; ++i)
     for( client=1; client<=MaxClients; ++client )
     {
@@ -353,8 +353,8 @@ void Frame_Send_All()
             }
         }
     }
-    end = GetEngineTime();
-    PrintToServer(" size=%d | %f - %f = %f ", strlen(text), end, start, end-start);
+    // end = GetEngineTime();
+    // PrintToServer(" size=%d | %f - %f = %f ", strlen(text), end, start, end-start);
 }
 
 void GetHUDText(int client, int to_client, char[] text)
