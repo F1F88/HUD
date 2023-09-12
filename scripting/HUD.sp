@@ -15,7 +15,7 @@
 #define MAX_CLASSNAME                       32
 
 #define PLUGIN_NAME                         "HUD"
-#define PLUGIN_VERSION                      "v1.2.3"
+#define PLUGIN_VERSION                      "v1.2.4"
 #define PLUGIN_DESCRIPTION                  "Show data in HUD (KeyHintText)"
 #define PREFIX_CV                           "sm_hud"
 #define PREFIX_MESSAGE                      "[HUD] By F1F88"
@@ -27,17 +27,18 @@
 #define BIT_SHOW_SELF_HEALTH                ( 1 << 3 )
 #define BIT_SHOW_SELF_STAMINA               ( 1 << 4 )
 #define BIT_SHOW_SELF_SPEED                 ( 1 << 5 )
-#define BIT_SHOW_SELF_CLIP                  ( 1 << 6 )
-#define BIT_SHOW_SELF_INVENTORY             ( 1 << 7 )
-#define BIT_SHOW_SELF_STATUS                ( 1 << 8 )
-#define BIT_SHOW_AIM                        ( 1 << 9 )
-#define BIT_SHOW_AIM_PLAYER                 ( 1 << 10 )
-#define BIT_SHOW_AIM_PLAYER_NAME            ( 1 << 11 )
-#define BIT_SHOW_AIM_ZOMBIE                 ( 1 << 12 )
-#define BIT_SHOW_AIM_AMMO                   ( 1 << 13 )
-#define BIT_SHOW_AIM_ITEM                   ( 1 << 14 )
-#define BIT_SHOW_DIVIDER                    ( 1 << 15 )
-#define BIT_DEFAULT                         ( 1 << 16 ) - 1 - BIT_SHOW_SELF_NAME - BIT_SHOW_SELF_SPEED
+#define BIT_SHOW_SELF_SPEED_VERTICAL        ( 1 << 6 )
+#define BIT_SHOW_SELF_CLIP                  ( 1 << 7 )
+#define BIT_SHOW_SELF_INVENTORY             ( 1 << 8 )
+#define BIT_SHOW_SELF_STATUS                ( 1 << 9 )
+#define BIT_SHOW_AIM                        ( 1 << 10 )
+#define BIT_SHOW_AIM_PLAYER                 ( 1 << 11 )
+#define BIT_SHOW_AIM_PLAYER_NAME            ( 1 << 12 )
+#define BIT_SHOW_AIM_ZOMBIE                 ( 1 << 13 )
+#define BIT_SHOW_AIM_AMMO                   ( 1 << 14 )
+#define BIT_SHOW_AIM_ITEM                   ( 1 << 15 )
+#define BIT_SHOW_DIVIDER                    ( 1 << 16 )
+#define BIT_DEFAULT                         ( 1 << 17 ) - 1 - BIT_SHOW_SELF_NAME - BIT_SHOW_SELF_SPEED - BIT_SHOW_SELF_SPEED_VERTICAL
 
 public Plugin myinfo =
 {
@@ -84,6 +85,7 @@ enum
     O_InfectedEnd,      // 感染结束时间
     O_BlindnessEnd,     // 疫苗部分失明影响结束时间
     O_Stamina,          // 体力
+    O_vecVelocity0,     // 移动速度
     O_IsCharging,       // 是否在蓄力
     O_ActiveWeapon,     // 当前武器
     O_Ammo,             // 弹药库
@@ -143,6 +145,11 @@ public APLRes AskPluginLoad2(Handle myself, bool late, char[] error, int err_max
     if( (g_offset[O_Stamina]        = FindSendPropInfo("CNMRiH_Player", "m_flStamina")) < 1 )
     {
         strcopy(error, err_max,     "Can't find offset 'CNMRiH_Player::m_flStamina'!");
+        return APLRes_Failure;
+    }
+    if( (g_offset[O_vecVelocity0]   = FindSendPropInfo("CNMRiH_Player", "m_vecVelocity[0]")) < 1 )
+    {
+        strcopy(error, err_max,     "Can't find offset 'CNMRiH_Player::m_vecVelocity[0]'!");
         return APLRes_Failure;
     }
     if( (g_offset[O_ActiveWeapon]   = FindSendPropInfo("CNMRiH_Player", "m_hActiveWeapon")) < 1 )
@@ -630,13 +637,19 @@ stock float GetStamina(int client)
     return GetEntDataFloat(client, g_offset[O_Stamina]);
 }
 
-stock float GetSpeed(int client, float vec[3]={})
+stock float GetSpeed(int client, float vel[3]={})
 {
-    GetEntPropVector(client, Prop_Data, "m_vecVelocity", vec);
-    vec[0] *= vec[0];
-    vec[1] *= vec[1];
-    vec[2] *= vec[2];
-    return SquareRoot(vec[0] + vec[1] + vec[2]);
+    vel[0] = GetEntDataFloat(client, g_offset[O_vecVelocity0]);
+    vel[1] = GetEntDataFloat(client, g_offset[O_vecVelocity0] + 4);
+    if( CheckClientPerf(client, BIT_SHOW_SELF_SPEED_VERTICAL) )
+    {
+        vel[2] = GetEntDataFloat(client, g_offset[O_vecVelocity0] + 8);
+    }
+    else
+    {
+        vel[2] = 0.0;
+    }
+    return GetVectorLength(vel);
 }
 
 stock int GetActiveWeapon(int client)
@@ -769,7 +782,7 @@ void Global_Timer_Off()
 {
     if( g_timer != null || g_timer != INVALID_HANDLE )
     {
-        CloseHandle(g_timer);
+        delete g_timer;
     }
 }
 
@@ -819,22 +832,23 @@ void ShowMenuClientPrefs(int client, int at=0)
     menu_cookie.ExitBackButton = true;
     menu_cookie.SetTitle("%T   "...PLUGIN_VERSION..."\n \n%T\n ", "phrase_prefix_menu", client, "phrase_menu_title", client);
 
-    CustomAddItem(menu_cookie, client, BIT_SHOW_ENABLED,          "phrase_menu_show_enabled");
-    CustomAddItem(menu_cookie, client, BIT_SHOW_AT_DEATH,         "phrase_menu_at_death");
-    CustomAddItem(menu_cookie, client, BIT_SHOW_SELF_NAME,        "phrase_menu_show_self_name");
-    CustomAddItem(menu_cookie, client, BIT_SHOW_SELF_HEALTH,      "phrase_menu_show_self_health");
-    CustomAddItem(menu_cookie, client, BIT_SHOW_SELF_STAMINA,     "phrase_menu_show_self_stamina");
-    CustomAddItem(menu_cookie, client, BIT_SHOW_SELF_SPEED,       "phrase_menu_show_self_speed");
-    CustomAddItem(menu_cookie, client, BIT_SHOW_SELF_CLIP,        "phrase_menu_show_self_clip");
-    CustomAddItem(menu_cookie, client, BIT_SHOW_SELF_INVENTORY,   "phrase_menu_show_self_inventory");
-    CustomAddItem(menu_cookie, client, BIT_SHOW_SELF_STATUS,      "phrase_menu_show_self_status");
-    CustomAddItem(menu_cookie, client, BIT_SHOW_AIM,              "phrase_menu_show_aim");
-    CustomAddItem(menu_cookie, client, BIT_SHOW_AIM_PLAYER,       "phrase_menu_show_aim_player");
-    CustomAddItem(menu_cookie, client, BIT_SHOW_AIM_PLAYER_NAME,  "phrase_menu_show_aim_player_name");
-    CustomAddItem(menu_cookie, client, BIT_SHOW_AIM_ZOMBIE,       "phrase_menu_show_aim_zombie");
-    CustomAddItem(menu_cookie, client, BIT_SHOW_AIM_AMMO,         "phrase_menu_show_aim_ammo");
-    CustomAddItem(menu_cookie, client, BIT_SHOW_AIM_ITEM,         "phrase_menu_show_aim_item");
-    CustomAddItem(menu_cookie, client, BIT_SHOW_DIVIDER,          "phrase_menu_show_divider");
+    CustomAddItem(menu_cookie, client, BIT_SHOW_ENABLED,                "phrase_menu_show_enabled");
+    CustomAddItem(menu_cookie, client, BIT_SHOW_AT_DEATH,               "phrase_menu_at_death");
+    CustomAddItem(menu_cookie, client, BIT_SHOW_SELF_NAME,              "phrase_menu_show_self_name");
+    CustomAddItem(menu_cookie, client, BIT_SHOW_SELF_HEALTH,            "phrase_menu_show_self_health");
+    CustomAddItem(menu_cookie, client, BIT_SHOW_SELF_STAMINA,           "phrase_menu_show_self_stamina");
+    CustomAddItem(menu_cookie, client, BIT_SHOW_SELF_SPEED,             "phrase_menu_show_self_speed");
+    CustomAddItem(menu_cookie, client, BIT_SHOW_SELF_SPEED_VERTICAL,    "phrase_menu_show_self_speed_vertical");
+    CustomAddItem(menu_cookie, client, BIT_SHOW_SELF_CLIP,              "phrase_menu_show_self_clip");
+    CustomAddItem(menu_cookie, client, BIT_SHOW_SELF_INVENTORY,         "phrase_menu_show_self_inventory");
+    CustomAddItem(menu_cookie, client, BIT_SHOW_SELF_STATUS,            "phrase_menu_show_self_status");
+    CustomAddItem(menu_cookie, client, BIT_SHOW_AIM,                    "phrase_menu_show_aim");
+    CustomAddItem(menu_cookie, client, BIT_SHOW_AIM_PLAYER,             "phrase_menu_show_aim_player");
+    CustomAddItem(menu_cookie, client, BIT_SHOW_AIM_PLAYER_NAME,        "phrase_menu_show_aim_player_name");
+    CustomAddItem(menu_cookie, client, BIT_SHOW_AIM_ZOMBIE,             "phrase_menu_show_aim_zombie");
+    CustomAddItem(menu_cookie, client, BIT_SHOW_AIM_AMMO,               "phrase_menu_show_aim_ammo");
+    CustomAddItem(menu_cookie, client, BIT_SHOW_AIM_ITEM,               "phrase_menu_show_aim_item");
+    CustomAddItem(menu_cookie, client, BIT_SHOW_DIVIDER,                "phrase_menu_show_divider");
 
     menu_cookie.DisplayAt(client, at, 30);
 }

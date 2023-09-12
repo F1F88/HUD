@@ -236,6 +236,13 @@
 		"zho"			"是否顯示玩家移動速度"
 	}
 
+	"phrase_menu_show_self_speed_vertical"
+	{
+		"en"			"Whether to calc vertical velocity in speed"
+		"chi"			"是否计算移动速度中的垂直速度"
+		"zho"			"是否計算移動速度中的垂直速度"
+	}
+
 	"phrase_menu_show_self_clip"
 	{
 		"en"			"Whether to display player clip"
