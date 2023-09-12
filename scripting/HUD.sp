@@ -316,12 +316,6 @@ Action Timer_Global(Handle timer)
         return Plugin_Continue;
     }
 
-    RequestFrame(Frame_Send_All);
-    return Plugin_Continue;
-}
-
-void Frame_Send_All()
-{
     static int client;
     static char text[MAX_KEY_HINT_TEXT_LEN];
     // static float start, end;
@@ -355,12 +349,14 @@ void Frame_Send_All()
     }
     // end = GetEngineTime();
     // PrintToServer(" size=%d | %f - %f = %f ", strlen(text), end, start, end-start);
+    return Plugin_Continue;
 }
 
 void GetHUDText(int client, int to_client, char[] text)
 {
     text[0] = '\0';
     // strcopy(text, PREFIX_MESSAGE);
+
     if( CheckClientPerf(to_client, BIT_SHOW_SELF_NAME) )
     {
         AddNewLine_Player_Name(client, client, text);       // 自己的 名称
