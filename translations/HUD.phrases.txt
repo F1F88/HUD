@@ -24,56 +24,48 @@
 	"phrase_player_name"
 	{
 		"#format"		"{1:N}"
-		"en"			"Name: {1}"
-		"chi"			"名称: {1}"
-		"zho"			"名稱: {1}"
+		"en"			"Name {1}"
+		"chi"			"名称 {1}"
+		"zho"			"名稱 {1}"
 	}
 
 	"phrase_hp"
 	{
 		"#format"		"{1:d}"
-		"en"			"Health: {1}"
-		"chi"			"血量: {1}"
-		"zho"			"血量: {1}"
+		"en"			"Health {1}"
+		"chi"			"血量 {1}"
+		"zho"			"血量 {1}"
 	}
 
 	"phrase_stamina"
 	{
 		"#format"		"{1:.0f}"
-		"en"			"Stamina: {1}"
-		"chi"			"体力: {1}"
-		"zho"			"體力: {1}"
-	}
-
-	"phrase_speed"
-	{
-		"#format"		"{1:.0f}"
-		"en"			"Speed: {1}"
-		"chi"			"速度: {1}"
-		"zho"			"速度: {1}"
+		"en"			"Stamina {1}"
+		"chi"			"体力 {1}"
+		"zho"			"體力 {1}"
 	}
 
 	"phrase_clip"
 	{
 		"#format"		"{1:d},{2:d}"
-		"en"			"Ammo: {1} / {2}"
-		"chi"			"弹药: {1} / {2}"
-		"zho"			"彈藥: {1} / {2}"
+		"en"			"Ammo {1} / {2}"
+		"chi"			"弹药 {1} / {2}"
+		"zho"			"彈藥 {1} / {2}"
 	}
 
 	"phrase_inventory"
 	{
 		"#format"		"{1:d},{2:d}"
-		"en"			"Inventory: {1} / {2}"
-		"chi"			"负重: {1} / {2}"
-		"zho"			"負重: {1} / {2}"
+		"en"			"Inventory {1} / {2}"
+		"chi"			"负重 {1} / {2}"
+		"zho"			"負重 {1} / {2}"
 	}
 
 	"phrase_status_label"
 	{
-		"en"			"Status: "
-		"chi"			"状态: "
-		"zho"			"狀態: "
+		"en"			"Status "
+		"chi"			"状态 "
+		"zho"			"狀態 "
 	}
 
 	"phrase_status_delimiter"
@@ -120,59 +112,65 @@
 		"zho"			"健康"
 	}
 
-	"phrase_zombie_name"
+	"phrase_speed"
 	{
-		"#format"		"{1:T}"
-		"en"			"Type: {1}"
-		"chi"			"种类: {1}"
-		"zho"			"種類: {1}"
+		"#format"		"{1:.0f}"
+		"en"			"Speed {1}"
+		"chi"			"速度 {1}"
+		"zho"			"速度 {1}"
 	}
 
-	"phrase_zombie_name_default"
+	"phrase_zombie_default"
 	{
-		"en"			"Zombie"
-		"chi"			"丧尸"
-		"zho"			"殭屍"
+		"#format"		"{1:d}"
+		"en"			"Zombie {1}"
+		"chi"			"丧尸 {1}"
+		"zho"			"殭屍 {1}"
 	}
 
 	"npc_nmrih_shamblerzombie"
 	{
-		"en"			"Zombie"
-		"chi"			"丧尸"
-		"zho"			"殭屍"
+		"#format"		"{1:d}"
+		"en"			"Zombie {1}"
+		"chi"			"行尸 {1}"
+		"zho"			"行屍 {1}"
 	}
 
 	"npc_nmrih_runnerzombie"
 	{
-		"en"			"Runner Zombie"
-		"chi"			"跑尸"
-		"zho"			"奔跑殭屍"
+		"#format"		"{1:d}"
+		"en"			"Runner Zombie {1}"
+		"chi"			"跑尸 {1}"
+		"zho"			"奔跑殭屍 {1}"
 	}
 
 	"npc_nmrih_kidzombie"
 	{
-		"en"			"Kid Zombie"
-		"chi"			"丧尸小孩"
-		"zho"			"孩童殭屍"
+		"#format"		"{1:d}"
+		"en"			"Kid Zombie {1}"
+		"chi"			"丧尸小孩 {1}"
+		"zho"			"孩童殭屍 {1}"
 	}
 
 	"npc_nmrih_turnedzombie"
 	{
-		"en"			"Turned Zombie"
-		"chi"			"丧尸队友"
-		"zho"			"轉化殭屍"
+		"#format"		"{1:d}"
+		"en"			"Turned Zombie {1}"
+		"chi"			"丧尸队友 {1}"
+		"zho"			"轉化殭屍 {1}"
 	}
 
-	"phrase_ammo"
+	"phrase_ammo_box"
 	{
 		"#format"		"{1:T}"
-		"en"			"Ammo: {1}"
-		"chi"			"弹药: {1}"
-		"zho"			"彈藥: {1}"
+		"en"			"Ammo {1}"
+		"chi"			"弹药 {1}"
+		"zho"			"彈藥 {1}"
 	}
 
-	"phrase_ammo_default"
+	"phrase_ammo_box_default"
 	{
+		"#format"		"{1:s}"
 		"en"			"Ammo Box"
 		"chi"			"弹药盒"
 		"zho"			"彈藥盒"
@@ -181,143 +179,143 @@
 	"phrase_item_phrase"
 	{
 		"#format"		"{1:T}"
-		"en"			"Item: {1}"
-		"chi"			"物品: {1}"
-		"zho"			"物品: {1}"
+		"en"			"Item {1}"
+		"chi"			"物品 {1}"
+		"zho"			"物品 {1}"
 	}
 
 	"phrase_item_string"
 	{
 		"#format"		"{1:s}"
-		"en"			"Item: {1}"
-		"chi"			"物品: {1}"
-		"zho"			"物品: {1}"
+		"en"			"Item {1}"
+		"chi"			"物品 {1}"
+		"zho"			"物品 {1}"
 	}
 
 	"phrase_menu_title"
 	{
-		"en"			"* Customize HUD panel display data"
-		"chi"			"* 自定义 HUD 面板显示数据"
-		"zho"			"* 自定義 HUD 面板顯示數據"
+		"en"			"* Customize HUD"
+		"chi"			"* 自定义 HUD 面板"
+		"zho"			"* 自定義 HUD 面板"
 	}
 
 	"phrase_menu_show_enabled"
 	{
-		"en"			"Whether to enable the data dashboard (HUD)"
-		"chi"			"是否启用数据仪表盘"
-		"zho"			"是否啟用數據儀錶盤"
+		"en"			"Enable the HUD"
+		"chi"			"启用 HUD"
+		"zho"			"啟用 HUD"
 	}
 
 	"phrase_menu_at_death"
 	{
-		"en"			"Whether it is still enabled at death"
-		"chi"			"是否在死亡时也启用"
-		"zho"			"是否在死亡時也啟用"
+		"en"			"Disable after death"
+		"chi"			"死亡后暂停"
+		"zho"			"死亡後暫停"
 	}
 
 	"phrase_menu_show_self_name"
 	{
-		"en"			"Whether to display player name"
-		"chi"			"是否显示玩家名称"
-		"zho"			"是否顯示玩家名称"
+		"en"			"Display self name"
+		"chi"			"显示自己名称"
+		"zho"			"顯示自己名称"
 	}
 
-	"phrase_menu_show_self_health"
+	"phrase_menu_show_health"
 	{
-		"en"			"Whether to display player health"
-		"chi"			"是否显示玩家血量"
-		"zho"			"是否顯示玩家血量"
+		"en"			"Display player health"
+		"chi"			"显示玩家血量"
+		"zho"			"顯示玩家血量"
 	}
 
-	"phrase_menu_show_self_stamina"
+	"phrase_menu_show_stamina"
 	{
-		"en"			"Whether to display player stamina"
-		"chi"			"是否显示玩家体力"
-		"zho"			"是否顯示玩家体力"
+		"en"			"Display player stamina"
+		"chi"			"显示玩家体力"
+		"zho"			"顯示玩家体力"
 	}
 
-	"phrase_menu_show_self_speed"
+	"phrase_menu_show_clip"
 	{
-		"en"			"Whether to display player move speed"
-		"chi"			"是否显示玩家移动速度"
-		"zho"			"是否顯示玩家移動速度"
+		"en"			"Display player clip"
+		"chi"			"显示玩家弹药数"
+		"zho"			"顯示玩家彈藥數"
 	}
 
-	"phrase_menu_show_self_speed_vertical"
+	"phrase_menu_show_inventory"
 	{
-		"en"			"Whether to calc vertical velocity in speed"
-		"chi"			"是否计算移动速度中的垂直速度"
-		"zho"			"是否計算移動速度中的垂直速度"
+		"en"			"Display player inventory usage"
+		"chi"			"显示玩家库存占用"
+		"zho"			"顯示玩家庫存佔用"
 	}
 
-	"phrase_menu_show_self_clip"
+	"phrase_menu_show_status"
 	{
-		"en"			"Whether to display player clip"
-		"chi"			"是否显示玩家弹药数"
-		"zho"			"是否顯示玩家彈藥數"
+		"en"			"Display player status"
+		"chi"			"显示玩家状态"
+		"zho"			"顯示玩家狀態"
 	}
 
-	"phrase_menu_show_self_inventory"
+	"phrase_menu_show_speed"
 	{
-		"en"			"Whether to display player inventory usage"
-		"chi"			"是否显示玩家库存占用"
-		"zho"			"是否顯示玩家庫存佔用"
+		"en"			"Display player move speed"
+		"chi"			"显示玩家移动速度"
+		"zho"			"顯示玩家移動速度"
 	}
 
-	"phrase_menu_show_self_status"
+	"phrase_menu_speed_ignore_vertical"
 	{
-		"en"			"Whether to display player status"
-		"chi"			"是否显示玩家状态"
-		"zho"			"是否顯示玩家狀態"
+		"en"			"Ignore vertical travel speed"
+		"chi"			"忽略垂直移动速度"
+		"zho"			"忽略垂直移動速度"
 	}
 
 	"phrase_menu_show_aim"
 	{
-		"en"			"Whether to display targeted data"
-		"chi"			"是否显示瞄准的目标数据"
-		"zho"			"是否顯示瞄準的目標數據"
+		"en"			"Display targeted data"
+		"chi"			"显示瞄准的目标"
+		"zho"			"顯示瞄準的目標"
 	}
 
 	"phrase_menu_show_aim_player"
 	{
-		"en"			"Whether to display targeted player data"
-		"chi"			"是否显示瞄准的玩家数据"
-		"zho"			"是否顯示瞄準的玩家數據"
+		"en"			"Display targeted player"
+		"chi"			"显示瞄准的玩家"
+		"zho"			"顯示瞄準的玩家"
 	}
 
 	"phrase_menu_show_aim_player_name"
 	{
-		"en"			"Whether to display targeted player name"
-		"chi"			"是否显示瞄准的玩家名称"
-		"zho"			"是否顯示瞄準的玩家名称"
+		"en"			"Display targeted player name"
+		"chi"			"显示瞄准的玩家名称"
+		"zho"			"顯示瞄準的玩家名称"
 	}
 
 	"phrase_menu_show_aim_zombie"
 	{
-		"en"			"Whether to display targeted zombie data"
-		"chi"			"是否显示瞄准的丧尸数据"
-		"zho"			"是否顯示瞄準的喪屍數據"
+		"en"			"Display targeted zombie"
+		"chi"			"显示瞄准的丧尸"
+		"zho"			"顯示瞄準的喪屍"
 	}
 
-	"phrase_menu_show_aim_ammo"
+	"phrase_menu_show_aim_ammo_box"
 	{
-		"en"			"Whether to display targeted ammunition box information"
-		"chi"			"是否显示瞄准的弹药盒信息"
-		"zho"			"是否顯示瞄準的彈藥盒資訊"
+		"en"			"Display targeted ammo box"
+		"chi"			"显示瞄准的弹药盒"
+		"zho"			"顯示瞄準的彈藥盒"
 	}
 
 	"phrase_menu_show_aim_item"
 	{
-		"en"			"Whether to display targeted item information"
-		"chi"			"是否显示瞄准的物品信息"
-		"zho"			"是否顯示瞄準的物品資訊"
+		"en"			"Display targeted item"
+		"chi"			"显示瞄准的道具"
+		"zho"			"顯示瞄準的道具"
 	}
 
 	"phrase_menu_show_divider"
 	{
-		"en"			"Whether to display dividers"
-		"chi"			"是否显示分割线"
-		"zho"			"是否顯示分割線"
+		"en"			"Display dividers"
+		"chi"			"显示分割线"
+		"zho"			"顯示分割線"
 	}
 
 	// * By https://github.com/nmrih/nmrih-localization-files/blob/master/nmrih/resource/

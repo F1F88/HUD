@@ -15,7 +15,7 @@
 #define MAX_CLASSNAME                       32
 
 #define PLUGIN_NAME                         "HUD"
-#define PLUGIN_VERSION                      "v1.2.7"
+#define PLUGIN_VERSION                      "v1.3.0"
 #define PLUGIN_DESCRIPTION                  "Show data in HUD (KeyHintText)"
 #define PREFIX_CV                           "sm_hud"
 #define PREFIX_MESSAGE                      "[HUD] By F1F88"
@@ -24,21 +24,21 @@
 #define BIT_SHOW_ENABLED                    ( 1 << 0 )
 #define BIT_SHOW_AT_DEATH                   ( 1 << 1 )
 #define BIT_SHOW_SELF_NAME                  ( 1 << 2 )
-#define BIT_SHOW_SELF_HEALTH                ( 1 << 3 )
-#define BIT_SHOW_SELF_STAMINA               ( 1 << 4 )
-#define BIT_SHOW_SELF_SPEED                 ( 1 << 5 )
-#define BIT_SHOW_SELF_SPEED_VERTICAL        ( 1 << 6 )
-#define BIT_SHOW_SELF_CLIP                  ( 1 << 7 )
-#define BIT_SHOW_SELF_INVENTORY             ( 1 << 8 )
-#define BIT_SHOW_SELF_STATUS                ( 1 << 9 )
+#define BIT_SHOW_HEALTH                     ( 1 << 3 )
+#define BIT_SHOW_STAMINA                    ( 1 << 4 )
+#define BIT_SHOW_CLIP                       ( 1 << 5 )
+#define BIT_SHOW_INVENTORY                  ( 1 << 6 )
+#define BIT_SHOW_STATUS                     ( 1 << 7 )
+#define BIT_SHOW_SPEED                      ( 1 << 8 )
+#define BIT_SPEED_IGNORE_VERTICAL           ( 1 << 9 )
 #define BIT_SHOW_AIM                        ( 1 << 10 )
 #define BIT_SHOW_AIM_PLAYER                 ( 1 << 11 )
 #define BIT_SHOW_AIM_PLAYER_NAME            ( 1 << 12 )
 #define BIT_SHOW_AIM_ZOMBIE                 ( 1 << 13 )
-#define BIT_SHOW_AIM_AMMO                   ( 1 << 14 )
+#define BIT_SHOW_AIM_AMMO_BOX               ( 1 << 14 )
 #define BIT_SHOW_AIM_ITEM                   ( 1 << 15 )
 #define BIT_SHOW_DIVIDER                    ( 1 << 16 )
-#define BIT_DEFAULT                         ( 1 << 17 ) - 1 - BIT_SHOW_SELF_NAME - BIT_SHOW_SELF_SPEED - BIT_SHOW_SELF_SPEED_VERTICAL
+#define BIT_DEFAULT                         ( 1 << 31 ) - 1 - BIT_SHOW_SELF_NAME - BIT_SHOW_SPEED - BIT_SHOW_AIM_AMMO_BOX - BIT_SHOW_AIM_ITEM
 
 public Plugin myinfo =
 {
@@ -87,7 +87,6 @@ enum
     O_BlindnessEnd,     // 疫苗部分失明影响结束时间
     O_Stamina,          // 体力
     O_vecVelocity0,     // 移动速度
-    O_IsCharging,       // 是否在蓄力
     O_ActiveWeapon,     // 当前武器
     O_Ammo,             // 弹药库
     O_CarriedWeight,    // 一号背包重量
@@ -222,7 +221,7 @@ public void OnPluginStart()
     cv_update_interval = convar.FloatValue;
     (convar = CreateConVar(PREFIX_CV..."_trace_range",          "1024.0",   "The maximum reach of the player target trace in game units", _, true, 32.0)).AddChangeHook(On_ConVar_Change);
     cv_target_range = convar.FloatValue;
-    (convar = CreateConVar(PREFIX_CV..."_trace_hull",           "0",        "如果 trace ray 没有获取到目标, 使用 trace hull 再次尝试", _, true, 0.0, true, 1.0)).AddChangeHook(On_ConVar_Change);
+    (convar = CreateConVar(PREFIX_CV..."_trace_hull",           "1",        "如果 trace ray 没有获取到目标, 使用 trace hull 再次尝试", _, true, 0.0, true, 1.0)).AddChangeHook(On_ConVar_Change);
     cv_trace_hull = convar.BoolValue;
     (convar = CreateConVar(PREFIX_CV..."_trace_width",          "16.0",     "二次搜索目标的射线的宽度", _, true, 0.1)).AddChangeHook(On_ConVar_Change);
     cv_trace_width = convar.FloatValue;
@@ -320,10 +319,10 @@ void Frame_Send_All()
 {
     static int client;
     static char text[MAX_KEY_HINT_TEXT_LEN];
-    // static float start, end;
+    static float start, end;
 
-    // start = GetEngineTime();
-    // for(int i=0; i<=10; ++i)
+    start = GetEngineTime();
+    // for(int i=0; i<=20; ++i)
     for( client=1; client<=MaxClients; ++client )
     {
         if( IsClientInGame(client) && CheckClientPerf(client, BIT_SHOW_ENABLED) )
@@ -349,8 +348,8 @@ void Frame_Send_All()
             }
         }
     }
-    // end = GetEngineTime();
-    // PrintToServer(" size=%d | %f - %f = %f ", strlen(text), end, start, end-start);
+    end = GetEngineTime();
+    PrintToServer(" size=%d | %f - %f = %f ", strlen(text), end, start, end-start);
 }
 
 void GetHUDText(int client, int to_client, char[] text)
@@ -413,29 +412,29 @@ stock void AddText_Player(int client, int to_client, char[] text)
     // {
     //     AddNewLine_Player_Name(client, to_client, text);
     // }
-    if( CheckClientPerf(to_client, BIT_SHOW_SELF_HEALTH) )      // 血量
+    if( CheckClientPerf(to_client, BIT_SHOW_HEALTH) )       // 血量
     {
         AddNewLine_Player_Health(client, to_client, text);
     }
-    if( CheckClientPerf(to_client, BIT_SHOW_SELF_STAMINA) )     // 体力
+    if( CheckClientPerf(to_client, BIT_SHOW_STAMINA) )      // 体力
     {
         AddNewLine_Player_Stamina(client, to_client, text);
     }
-    if( CheckClientPerf(to_client, BIT_SHOW_SELF_SPEED) )       // 速度
-    {
-        AddNewLine_Speed(client, to_client, text);
-    }
-    if( CheckClientPerf(to_client, BIT_SHOW_SELF_CLIP) )        // 子弹
+    if( CheckClientPerf(to_client, BIT_SHOW_CLIP) )         // 子弹
     {
         AddNewLine_Player_Clip(client, to_client, text);
     }
-    if( CheckClientPerf(to_client, BIT_SHOW_SELF_INVENTORY) )   // 库存负重
+    if( CheckClientPerf(to_client, BIT_SHOW_INVENTORY) )    // 库存负重
     {
         AddNewLine_Player_Inventory(client, to_client, text);
     }
-    if( CheckClientPerf(to_client, BIT_SHOW_SELF_STATUS) )      // 状态 - 流血、感染、感染剩余、疫苗注射、疫苗近视剩余
+    if( CheckClientPerf(to_client, BIT_SHOW_STATUS) )       // 状态 - 流血、感染、感染剩余、疫苗注射、疫苗近视剩余
     {
         AddNewLine_Player_Status(client, to_client, text);
+    }
+    if( CheckClientPerf(to_client, BIT_SHOW_SPEED) )        // 速度
+    {
+        AddNewLine_Speed(client, to_client, text);
     }
 }
 
@@ -444,14 +443,13 @@ stock void AddText_Zombie(int client, int to_client, int entity, char[] classnam
     if( CheckClientPerf(to_client, BIT_SHOW_AIM_ZOMBIE) )
     {
         AddNewLine_Divider(to_client, text);
-        AddNewLine_Zombie_Name(to_client, classname, text);
-        AddNweLine_Zombie_Health(entity, to_client, text);
+        AddNewLine_Zombie_Name_And_Health(entity, to_client, classname, text);
     }
 }
 
 stock void AddText_Ammo(int entity, int to_client, char[] text)
 {
-    if( CheckClientPerf(to_client, BIT_SHOW_AIM_AMMO) )
+    if( CheckClientPerf(to_client, BIT_SHOW_AIM_AMMO_BOX) )
     {
         AddNewLine_Divider(to_client, text);
 
@@ -460,11 +458,11 @@ stock void AddText_Ammo(int entity, int to_client, char[] text)
 
         if( TranslationPhraseExists(model) )
         {
-            Format(text, MAX_KEY_HINT_TEXT_LEN, "%s%T\n", text, "phrase_ammo", to_client, model, to_client);
+            Format(text, MAX_KEY_HINT_TEXT_LEN, "%s%T\n", text, "phrase_ammo_box", to_client, model, to_client);
         }
         else
         {
-            Format(text, MAX_KEY_HINT_TEXT_LEN, "%s%T\n", text, "phrase_ammo", to_client, "phrase_ammo_default", to_client);
+            Format(text, MAX_KEY_HINT_TEXT_LEN, "%s%T\n", text, "phrase_ammo_box", to_client, "phrase_ammo_box_default", to_client, model);
         }
     }
 }
@@ -503,25 +501,13 @@ void AddNewLine_Player_Stamina(int client, int to_client, char[] text)
     Format(text, MAX_KEY_HINT_TEXT_LEN, "%s%T\n", text, "phrase_stamina", to_client, GetStamina(client));
 }
 
-void AddNewLine_Speed(int client, int to_client, char[] text)
-{
-    Format(text, MAX_KEY_HINT_TEXT_LEN, "%s%T\n", text, "phrase_speed", to_client, GetSpeed(client));
-}
-
 void AddNewLine_Player_Clip(int client, int to_client, char[] text)
 {
-    static int weapon, ammo_clip1, ammo_clip_backpack;
+    static int weapon, ammo_clip1;
 
-    weapon = GetActiveWeapon(client);
-
-    if( IsValidEntity(weapon) )
+    if( IsValidEntity((weapon = GetActiveWeapon(client))) && HasClip1(weapon, ammo_clip1))
     {
-        ammo_clip1 = GetWeapon_Clip1_Remaining(weapon);
-        ammo_clip_backpack = GetWeapon_ClipBK_Remaining(client, weapon);
-        if( ammo_clip1 >= 0 && ammo_clip_backpack >= 0)
-        {
-            Format(text, MAX_KEY_HINT_TEXT_LEN, "%s%T\n", text, "phrase_clip", to_client, ammo_clip1, ammo_clip_backpack);
-        }
+        Format(text, MAX_KEY_HINT_TEXT_LEN, "%s%T\n", text, "phrase_clip", to_client, ammo_clip1, GetWeapon_ClipBK_Remaining(client, weapon));
     }
 }
 
@@ -584,6 +570,11 @@ void AddNewLine_Player_Status(int client, int to_client, char[] text)
     }
 }
 
+void AddNewLine_Speed(int client, int to_client, char[] text)
+{
+    Format(text, MAX_KEY_HINT_TEXT_LEN, "%s%T\n", text, "phrase_speed", to_client, GetSpeed(client));
+}
+
 void AddNewLine_Divider(int to_client, char[] text)
 {
     if( CheckClientPerf(to_client, BIT_SHOW_DIVIDER) )
@@ -592,21 +583,16 @@ void AddNewLine_Divider(int to_client, char[] text)
     }
 }
 
-void AddNewLine_Zombie_Name(int to_client, char[] zombie_classname, char[] text)
+void AddNewLine_Zombie_Name_And_Health(int entity, int to_client, char[] zombie_classname, char[] text)
 {
     if( TranslationPhraseExists(zombie_classname) )
     {
-        Format(text, MAX_KEY_HINT_TEXT_LEN, "%s%T\n", text, "phrase_zombie_name", to_client, zombie_classname, to_client);
+        Format(text, MAX_KEY_HINT_TEXT_LEN, "%s%T\n", text, zombie_classname, to_client, GetEntProp(entity, Prop_Data, "m_iHealth"));
     }
     else
     {
-        Format(text, MAX_KEY_HINT_TEXT_LEN, "%s%T\n", text, "phrase_zombie_name", to_client, "phrase_zombie_name_default", to_client);
+        Format(text, MAX_KEY_HINT_TEXT_LEN, "%s%T\n", text, "phrase_zombie_default", to_client, GetEntProp(entity, Prop_Data, "m_iHealth"));
     }
-}
-
-void AddNweLine_Zombie_Health(int entity, int to_client, char[] text)
-{
-    Format(text, MAX_KEY_HINT_TEXT_LEN, "%s%T\n", text, "phrase_hp", to_client, GetEntProp(entity, Prop_Data, "m_iHealth"));
 }
 
 // ========================================================================================================================================================================
@@ -618,22 +604,30 @@ stock bool IsBleeding(int client)
 
 stock bool IsInfected(int client, float &time_infected_end, float time_now=0.0)
 {
-    time_infected_end = GetEntDataFloat(client, g_offset[O_InfectedEnd]);
-    return FloatCompare(time_infected_end, (time_now == 0.0 ? GetEngineTime() : time_now)) == 1;
-    // return GetEntDataFloat(client, g_offset[O_InfectedStart]) > 0.0 && FloatCompare(GetEntDataFloat(client, g_offset[O_InfectedEnd]), GetGameTime()) == 1;
+    if( ! FloatCompare((time_infected_end = GetEntDataFloat(client, g_offset[O_InfectedEnd])), 0.0) )
+    {
+        return false;
+    }
+
+    time_now = ! FloatCompare(time_now, 0.0) ? GetGameTime() : time_now;
+    return FloatCompare(time_infected_end, time_now) == 1;
 }
 
 stock bool IsVaccinated(int client)
 {
-    return GetEntData(client, g_offset[O_VACCINATED]) == 1;
+    return GetEntData(client, g_offset[O_VACCINATED], 1) == 1;
 }
 
 // time_infected_end 实测并不完全准确, 会稍微晚几秒才完全恢复视力
 stock bool IsBlindness(int client, float &time_blindness_end, float time_now=0.0)
 {
-    // return RunEntVScriptBool(client, "IsPartialBlindnessActive()");
-    time_blindness_end = GetEntDataFloat(client, g_offset[O_BlindnessEnd]);
-    return FloatCompare(time_blindness_end, (time_now == 0.0 ? GetEngineTime() : time_now)) == 1;
+    if( ! FloatCompare((time_blindness_end = GetEntDataFloat(client, g_offset[O_BlindnessEnd])), 0.0) )
+    {
+        return false;
+    }
+
+    time_now = ! FloatCompare(time_now, 0.0) ? GetGameTime() : time_now;
+    return FloatCompare(time_blindness_end, time_now) == 1;
 }
 
 stock bool IsZombie(char[] classname)
@@ -648,34 +642,21 @@ stock float GetStamina(int client)
     return GetEntDataFloat(client, g_offset[O_Stamina]);
 }
 
-stock float GetSpeed(int client, float vel[3]={})
-{
-    vel[0] = GetEntDataFloat(client, g_offset[O_vecVelocity0]);
-    vel[1] = GetEntDataFloat(client, g_offset[O_vecVelocity0] + 4);
-    if( CheckClientPerf(client, BIT_SHOW_SELF_SPEED_VERTICAL) )
-    {
-        vel[2] = GetEntDataFloat(client, g_offset[O_vecVelocity0] + 8);
-    }
-    else
-    {
-        vel[2] = 0.0;
-    }
-    return GetVectorLength(vel);
-}
-
 stock int GetActiveWeapon(int client)
 {
     return GetEntDataEnt2(client, g_offset[O_ActiveWeapon]);
 }
 
-stock int GetWeapon_Clip1_Remaining(int weapon)
+// 没有弹夹的武器返回 -1
+stock int HasClip1(int weapon, int &clip)
 {
-    return GetEntData(weapon, g_offset[O_Clip]);
+    return (clip = GetEntData(weapon, g_offset[O_Clip])) != -1;
 }
 
+// 没有弹夹的武器返回 0
 stock int GetWeapon_ClipBK_Remaining(int client, int weapon)
 {
-    return GetEntData(client, g_offset[O_Ammo] + GetEntData(weapon, g_offset[O_Type]) * 4);
+    return GetEntData(client, (g_offset[O_Ammo] + (GetEntData(weapon, g_offset[O_Type]) << 2)));
 }
 
 stock int GetInventory1CarriedWeight(int client)
@@ -689,7 +670,7 @@ stock int GetAmmoCarriedWeight(int client)
     weigth = 0;
     for(i=O_AMMO_9MM; i<O_AMMO_Grenade; ++i)
     {
-        weigth += GetEntData(client, g_offset[O_Ammo] + i * 4) * cv_inv_ammoweight;
+        weigth += GetEntData(client, (g_offset[O_Ammo] + (i << 2))) * cv_inv_ammoweight;
     }
 
     // O_AMMO_Grenade | O_AMMO_Molotov | O_AMMO_TNT | 已经计算在 1 号背包中
@@ -697,7 +678,7 @@ stock int GetAmmoCarriedWeight(int client)
 
     for(i=O_AMMO_ARROW; i<O_AMMO_Total; ++i)
     {
-        weigth += GetEntData(client, g_offset[O_Ammo] + i * 4) * cv_inv_ammoweight;
+        weigth += GetEntData(client, (g_offset[O_Ammo] + (i << 2))) * cv_inv_ammoweight;
     }
 
     return weigth;
@@ -706,6 +687,21 @@ stock int GetAmmoCarriedWeight(int client)
 stock int GetCarriedWeight(int client)
 {
     return GetInventory1CarriedWeight(client) + GetAmmoCarriedWeight(client);
+}
+
+stock float GetSpeed(int client, float vel[3]={})
+{
+    vel[0] = GetEntDataFloat(client, g_offset[O_vecVelocity0]);
+    vel[1] = GetEntDataFloat(client, g_offset[O_vecVelocity0] + 4);
+    if( CheckClientPerf(client, BIT_SPEED_IGNORE_VERTICAL) )
+    {
+        vel[2] = 0.0;
+    }
+    else
+    {
+        vel[2] = GetEntDataFloat(client, g_offset[O_vecVelocity0] + 8);
+    }
+    return GetVectorLength(vel);
 }
 
 stock int GetObserverMode(int client)
@@ -848,18 +844,18 @@ void ShowMenuClientPrefs(int client, int at=0)
     CustomAddItem(menu_cookie, client, BIT_SHOW_ENABLED,                "phrase_menu_show_enabled");
     CustomAddItem(menu_cookie, client, BIT_SHOW_AT_DEATH,               "phrase_menu_at_death");
     CustomAddItem(menu_cookie, client, BIT_SHOW_SELF_NAME,              "phrase_menu_show_self_name");
-    CustomAddItem(menu_cookie, client, BIT_SHOW_SELF_HEALTH,            "phrase_menu_show_self_health");
-    CustomAddItem(menu_cookie, client, BIT_SHOW_SELF_STAMINA,           "phrase_menu_show_self_stamina");
-    CustomAddItem(menu_cookie, client, BIT_SHOW_SELF_SPEED,             "phrase_menu_show_self_speed");
-    CustomAddItem(menu_cookie, client, BIT_SHOW_SELF_SPEED_VERTICAL,    "phrase_menu_show_self_speed_vertical");
-    CustomAddItem(menu_cookie, client, BIT_SHOW_SELF_CLIP,              "phrase_menu_show_self_clip");
-    CustomAddItem(menu_cookie, client, BIT_SHOW_SELF_INVENTORY,         "phrase_menu_show_self_inventory");
-    CustomAddItem(menu_cookie, client, BIT_SHOW_SELF_STATUS,            "phrase_menu_show_self_status");
+    CustomAddItem(menu_cookie, client, BIT_SHOW_HEALTH,                 "phrase_menu_show_health");
+    CustomAddItem(menu_cookie, client, BIT_SHOW_STAMINA,                "phrase_menu_show_stamina");
+    CustomAddItem(menu_cookie, client, BIT_SHOW_CLIP,                   "phrase_menu_show_clip");
+    CustomAddItem(menu_cookie, client, BIT_SHOW_INVENTORY,              "phrase_menu_show_inventory");
+    CustomAddItem(menu_cookie, client, BIT_SHOW_STATUS,                 "phrase_menu_show_status");
+    CustomAddItem(menu_cookie, client, BIT_SHOW_SPEED,                  "phrase_menu_show_speed");
+    CustomAddItem(menu_cookie, client, BIT_SPEED_IGNORE_VERTICAL,       "phrase_menu_speed_ignore_vertical");
     CustomAddItem(menu_cookie, client, BIT_SHOW_AIM,                    "phrase_menu_show_aim");
     CustomAddItem(menu_cookie, client, BIT_SHOW_AIM_PLAYER,             "phrase_menu_show_aim_player");
     CustomAddItem(menu_cookie, client, BIT_SHOW_AIM_PLAYER_NAME,        "phrase_menu_show_aim_player_name");
     CustomAddItem(menu_cookie, client, BIT_SHOW_AIM_ZOMBIE,             "phrase_menu_show_aim_zombie");
-    CustomAddItem(menu_cookie, client, BIT_SHOW_AIM_AMMO,               "phrase_menu_show_aim_ammo");
+    CustomAddItem(menu_cookie, client, BIT_SHOW_AIM_AMMO_BOX,           "phrase_menu_show_aim_ammo_box");
     CustomAddItem(menu_cookie, client, BIT_SHOW_AIM_ITEM,               "phrase_menu_show_aim_item");
     CustomAddItem(menu_cookie, client, BIT_SHOW_DIVIDER,                "phrase_menu_show_divider");
 
