@@ -15,7 +15,7 @@
 #define MAX_CLASSNAME                       32
 
 #define PLUGIN_NAME                         "HUD"
-#define PLUGIN_VERSION                      "v1.3.3"
+#define PLUGIN_VERSION                      "v1.3.4"
 #define PLUGIN_DESCRIPTION                  "Show data in HUD (KeyHintText)"
 #define PREFIX_CV                           "sm_hud"
 #define PREFIX_MESSAGE                      "[HUD] By F1F88"
@@ -115,6 +115,7 @@ float       cv_update_interval
 
 float       g_hullMins[3], g_hullMaxs[3];
 
+UserMsg     g_id_KeyHintText;
 Handle      g_timer;
 Cookie      g_cookie;
 
@@ -194,6 +195,11 @@ public APLRes AskPluginLoad2(Handle myself, bool late, char[] error, int err_max
         strcopy(error, err_max,     "Can't find offset 'CNMRiH_WeaponBase::m_iClip1'!");
         return APLRes_Failure;
     }
+    if( (g_id_KeyHintText           = GetUserMessageId("KeyHintText")) == INVALID_MESSAGE_ID )
+    {
+        strcopy(error, err_max,     "Can't find UserMessageId 'KeyHintText'!");
+        return APLRes_Failure;
+    }
 
     MarkNativeAsOptional("Cookie.Cookie");
     MarkNativeAsOptional("Cookie.Get");
@@ -231,6 +237,8 @@ public void OnPluginStart()
     cv_inv_ammoweight = convar.IntValue;
 
     AutoExecConfig(true, PLUGIN_NAME);
+
+    HookEvent("player_death", On_player_death, EventHookMode_Post);
 
     g_cookie = new Cookie(PLUGIN_NAME..." By F1F88", PLUGIN_NAME..." client preference", CookieAccess_Private);
     SetCookieMenuItem(CustomCookieMenu, 0, "HUD");
@@ -305,6 +313,12 @@ public void OnConfigsExecuted()
 public void OnClientPutInServer(int client)
 {
     g_client_cookie[client] = g_cookie.GetInt(client, BIT_DEFAULT);
+}
+
+public void On_player_death(Event event, const char[] name, bool dontBroadcast)
+{
+    int client = GetClientOfUserId( event.GetInt("userid") );
+    QuickCloseMessage(client);
 }
 
 // ========================================================================================================================================================================
@@ -835,7 +849,11 @@ void QuickCloseMessage(int client)
 void SendMessage(int client, char[] text)
 {
     static Handle message;
-    message = StartMessageOne("KeyHintText", client);
+    static int clients[1];
+
+    clients[0] = client;
+    message = StartMessageEx(g_id_KeyHintText, clients, 1);
+
     BfWriteByte(message, 1);
     BfWriteString(message, text);
     EndMessage();
