@@ -15,7 +15,7 @@
 #define MAX_CLASSNAME                       32
 
 #define PLUGIN_NAME                         "HUD"
-#define PLUGIN_VERSION                      "v1.3.5"
+#define PLUGIN_VERSION                      "v1.3.6"
 #define PLUGIN_DESCRIPTION                  "Show data in HUD (KeyHintText)"
 #define PREFIX_CV                           "sm_hud"
 #define PREFIX_MESSAGE                      "[HUD] By F1F88"
@@ -802,34 +802,6 @@ stock void SetHullSize()
 
 // ========================================================================================================================================================================
 
-void PluginLateSupport()
-{
-    for(int client=1; client<=MaxClients; ++client)
-    {
-        if( IsClientInGame(client) )
-        {
-            g_client_cookie[client] = g_cookie.GetInt(client, BIT_DEFAULT);
-        }
-    }
-    g_plugin_late = false;
-}
-
-void Global_Timer_On()
-{
-    Global_Timer_Off();
-    g_timer = CreateTimer(cv_update_interval, Timer_Global, _, TIMER_REPEAT);
-}
-
-void Global_Timer_Off()
-{
-    if( g_timer != null || g_timer != INVALID_HANDLE )
-    {
-        delete g_timer;
-    }
-}
-
-// ========================================================================================================================================================================
-
 void SendMessageText(int client, char[] text)
 {
     static Handle message;
@@ -863,6 +835,34 @@ void SendMessage(int client, char[] text)
     BfWriteByte(message, 1);
     BfWriteString(message, text);
     EndMessage();
+}
+
+// ========================================================================================================================================================================
+
+void PluginLateSupport()
+{
+    for(int client=1; client<=MaxClients; ++client)
+    {
+        if( IsClientInGame(client) )
+        {
+            g_client_cookie[client] = g_cookie.GetInt(client, BIT_DEFAULT);
+        }
+    }
+    g_plugin_late = false;
+}
+
+void Global_Timer_On()
+{
+    Global_Timer_Off();
+    g_timer = CreateTimer(cv_update_interval, Timer_Global, _, TIMER_REPEAT);
+}
+
+void Global_Timer_Off()
+{
+    if( g_timer != null || g_timer != INVALID_HANDLE )
+    {
+        delete g_timer;
+    }
 }
 
 // ========================================================================================================================================================================
