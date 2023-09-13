@@ -15,7 +15,7 @@
 #define MAX_CLASSNAME                       32
 
 #define PLUGIN_NAME                         "HUD"
-#define PLUGIN_VERSION                      "v1.3.4"
+#define PLUGIN_VERSION                      "v1.3.5"
 #define PLUGIN_DESCRIPTION                  "Show data in HUD (KeyHintText)"
 #define PREFIX_CV                           "sm_hud"
 #define PREFIX_MESSAGE                      "[HUD] By F1F88"
@@ -238,7 +238,8 @@ public void OnPluginStart()
 
     AutoExecConfig(true, PLUGIN_NAME);
 
-    HookEvent("player_death", On_player_death, EventHookMode_Post);
+    HookEvent("player_death",           On_player_death,        EventHookMode_Post);
+    HookEvent("player_extracted",       On_player_extracted,    EventHookMode_Post);
 
     g_cookie = new Cookie(PLUGIN_NAME..." By F1F88", PLUGIN_NAME..." client preference", CookieAccess_Private);
     SetCookieMenuItem(CustomCookieMenu, 0, "HUD");
@@ -321,6 +322,11 @@ public void On_player_death(Event event, const char[] name, bool dontBroadcast)
     QuickCloseMessage(client);
 }
 
+void On_player_extracted(Event event, const char[] name, bool dontBroadcast)
+{
+    int client = event.GetInt("player_id");
+    QuickCloseMessage(client);
+}
 // ========================================================================================================================================================================
 
 Action Timer_Global(Handle timer)
