@@ -15,7 +15,7 @@
 #define MAX_CLASSNAME                       32
 
 #define PLUGIN_NAME                         "HUD"
-#define PLUGIN_VERSION                      "v1.3.6"
+#define PLUGIN_VERSION                      "v1.3.7"
 #define PLUGIN_DESCRIPTION                  "Show data in HUD (KeyHintText)"
 #define PREFIX_CV                           "sm_hud"
 #define PREFIX_MESSAGE                      "[HUD] By F1F88"
@@ -327,6 +327,7 @@ void On_player_extracted(Event event, const char[] name, bool dontBroadcast)
     int client = event.GetInt("player_id");
     QuickCloseMessage(client);
 }
+
 // ========================================================================================================================================================================
 
 Action Timer_Global(Handle timer)
@@ -903,17 +904,13 @@ int MenuHandler_Cookies(Menu menu, MenuAction action, int param1, int param2)
 {
     switch( action )
     {
-        case MenuAction_Cancel:
+        case MenuAction_End:
         {
             delete menu;
-            switch( param2 )
+            if( param1 == MenuEnd_Cancelled && param2 == MenuCancel_ExitBack )
             {
-                case MenuCancel_ExitBack:
-                {
-                    ShowCookieMenu(param1);
-                }
+                ShowCookieMenu(param1);
             }
-            return 0;
         }
         case MenuAction_Select:
         {
