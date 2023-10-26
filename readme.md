@@ -20,9 +20,11 @@ This plugin can display the following data to HUD (KeyHintText)
 
 Other:
 
-- Support customer preferences, customers can customize which data HUD displays
+- Support customer preferences (option)
+    - customers can customize which data HUD displays
 
-- Support for multiple languages, currently supported: English, SChinese, TChinese
+- Support for multiple languages
+    - Supported: English, SChinese, TChinese
 
 
 ![image](./img/Img_230910_011443.png)
@@ -34,7 +36,7 @@ note: I have only tested usability on nmrih and am not sure if other games are a
 
 - [SourceMod 1.11](https://www.sourcemod.net/downloads.php?branch=stable) or higher
 
-- [vscript_proxy](https://github.com/dysphie/nmrih-vscript-proxy/blob/main/vscript_proxy.inc)
+- clientprefs (option)
 
 ## Installation
 - Grab the latest ZIP from releases

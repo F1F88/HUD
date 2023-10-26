@@ -21,21 +21,23 @@
 
 **其他功能**
 
-- 支持客户偏好，客户可以自定义 HUD 显示的数据
+- 支持客户偏好（可选）
+    - 客户可以自定义 HUD 显示的数据
 
-- 支持多种语言，目前支持：英语、简体中文、繁体中文
+- 支持多种语言
+    - 已支持：英语、简体中文、繁体中文
 
 
 ![image](./img/Img_230910_011443.png)
 
-注意：仅 NMRIH 可用，其他游戏需要自己改 offset
+注意：仅 NMRIH 可用，其他游戏需要修改偏移量
 
 
 ## 依赖
 
 - [SourceMod 1.12](https://www.sourcemod.net/downloads.php?branch=stable) or higher
 
-- [vscript_proxy](https://github.com/dysphie/nmrih-vscript-proxy/blob/main/vscript_proxy.inc)
+- clientprefs 插件拓展（可选）
 
 ## 安装
 - Grab the latest ZIP from releases
