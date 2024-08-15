@@ -15,7 +15,7 @@
 #define MAX_CLASSNAME                       32
 
 #define PLUGIN_NAME                         "HUD"
-#define PLUGIN_VERSION                      "v1.3.7"
+#define PLUGIN_VERSION                      "v1.3.8"
 #define PLUGIN_DESCRIPTION                  "Show data in HUD (KeyHintText)"
 #define PREFIX_CV                           "sm_hud"
 #define PREFIX_MESSAGE                      "[HUD] By F1F88"
@@ -59,21 +59,21 @@ enum
 
 enum
 {
-    O_AMMO_9MM = 1,     // 1
-    O_AMMO_45ACP,       // 2
-    O_AMMO_357,         // 3
-    O_AMMO_12Gauge,     // 4
-    O_AMMO_22LR,        // 5
-    O_AMMO_308,         // 6
-    O_AMMO_556,         // 7
-    O_AMMO_762,         // 8
+    O_AMMO_9MM = 1,     // 1    | weight: 1
+    O_AMMO_45ACP,       // 2    | weight: 1
+    O_AMMO_357,         // 3    | weight: 1
+    O_AMMO_12Gauge,     // 4    | weight: 1
+    O_AMMO_22LR,        // 5    | weight: 1
+    O_AMMO_308,         // 6    | weight: 1
+    O_AMMO_556,         // 7    | weight: 1
+    O_AMMO_762,         // 8    | weight: 1
     O_AMMO_Grenade,     // 9    | weight: 100
     O_AMMO_Molotov,     // 10   | weight: 100
     O_AMMO_TNT,         // 11   | weight: 100
-    O_AMMO_ARROW,       // 12
-    O_AMMO_Fuel,        // 13
-    O_AMMO_Boards,      // 14
-    O_AMMO_Flares,      // 15
+    O_AMMO_ARROW,       // 12   | weight: 1
+    O_AMMO_Fuel,        // 13   | weight: 1
+    O_AMMO_Boards,      // 14   | weight: 1
+    O_AMMO_Flares,      // 15   | weight: 1
 
     O_AMMO_Total
 }
@@ -313,7 +313,23 @@ public void OnConfigsExecuted()
 
 public void OnClientPutInServer(int client)
 {
-    g_client_cookie[client] = g_cookie.GetInt(client, BIT_DEFAULT);
+    char buffer[16];
+    g_cookie.Get(client, buffer, sizeof(buffer));
+
+    int value;
+    if (buffer[0] == '\0')
+    {
+        value = BIT_DEFAULT;
+    }
+    else
+    {
+        if (StringToIntEx(buffer, value) == 0)
+        {
+            value = BIT_DEFAULT;
+        }
+    }
+
+    g_client_cookie[client] = value;
 }
 
 public void On_player_death(Event event, const char[] name, bool dontBroadcast)
@@ -842,11 +858,27 @@ void SendMessage(int client, char[] text)
 
 void PluginLateSupport()
 {
+    char buffer[16];
+    int value;
     for(int client=1; client<=MaxClients; ++client)
     {
         if( IsClientInGame(client) )
         {
-            g_client_cookie[client] = g_cookie.GetInt(client, BIT_DEFAULT);
+            g_cookie.Get(client, buffer, sizeof(buffer));
+
+            if (buffer[0] == '\0')
+            {
+                value = BIT_DEFAULT;
+            }
+            else
+            {
+                if (StringToIntEx(buffer, value) == 0)
+                {
+                    value = BIT_DEFAULT;
+                }
+            }
+
+            g_client_cookie[client] = value;
         }
     }
     g_plugin_late = false;
@@ -921,7 +953,10 @@ int MenuHandler_Cookies(Menu menu, MenuAction action, int param1, int param2)
             item_bit = StringToInt(item_info);
 
             g_client_cookie[param1] ^= item_bit;
-            g_cookie.SetInt(param1, g_client_cookie[param1]);
+
+            char buffer[16];
+            IntToString(g_client_cookie[param1], buffer, sizeof(buffer));
+            g_cookie.Set(param1, buffer);
 
             ShowMenuClientPrefs(param1, param2 / 7 * 7);
 
