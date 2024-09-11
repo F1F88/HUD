@@ -15,7 +15,7 @@
 #define MAX_CLASSNAME                       32
 
 #define PLUGIN_NAME                         "HUD"
-#define PLUGIN_VERSION                      "v1.3.9"
+#define PLUGIN_VERSION                      "v1.3.10"
 #define PLUGIN_DESCRIPTION                  "Show data in HUD (KeyHintText)"
 #define PREFIX_CV                           "sm_hud"
 #define PREFIX_MESSAGE                      "[HUD] By F1F88"
@@ -366,7 +366,7 @@ Action Timer_Global(Handle timer)
             if( IsPlayerAlive(client) )
             {
                 GetHUDText(client, client, text);
-                SendMessageText(client, text);
+                SendMessage(client, text);
             }
             else if( CheckClientPerf(client, BIT_SHOW_AT_DEATH) )
             {
@@ -378,7 +378,7 @@ Action Timer_Global(Handle timer)
                     if( target != client && target > 0 && target <= MaxClients && IsClientInGame(target) )
                     {
                         GetHUDText(target, client, text);
-                        SendMessageText(client, text);
+                        SendMessage(client, text);
                     }
                 }
             }
@@ -727,8 +727,9 @@ stock int GetCarriedWeight(int client)
     return GetInventory1CarriedWeight(client) + GetAmmoCarriedWeight(client);
 }
 
-stock float GetSpeed(int client, float vel[3]={})
+stock float GetSpeed(int client)
 {
+    static float vel[3];
     vel[0] = GetEntDataFloat(client, g_offset[O_vecVelocity0]);
     vel[1] = GetEntDataFloat(client, g_offset[O_vecVelocity0] + 4);
     if( CheckClientPerf(client, BIT_SPEED_IGNORE_VERTICAL) )
@@ -819,23 +820,6 @@ stock void SetHullSize()
 
 // ========================================================================================================================================================================
 
-void SendMessageText(int client, char[] text)
-{
-    static Handle message;
-    static int len;
-
-    len = strlen(text);
-    if( len > 1 )
-    {
-        text[len - 1] = '\0';       // 删除换行符
-        SendMessage(client, text);
-        message = StartMessageOne("KeyHintText", client);
-        BfWriteByte(message, 1);
-        BfWriteString(message, text);
-        EndMessage();
-    }
-}
-
 void QuickCloseMessage(int client)
 {
     SendMessage(client, "");
@@ -843,12 +827,10 @@ void QuickCloseMessage(int client)
 
 void SendMessage(int client, char[] text)
 {
-    static Handle message;
     static int clients[1];
-
     clients[0] = client;
-    message = StartMessageEx(g_id_KeyHintText, clients, 1);
 
+    Handle message = StartMessageEx(g_id_KeyHintText, clients, 1);
     BfWriteByte(message, 1);
     BfWriteString(message, text);
     EndMessage();
