@@ -35,7 +35,7 @@
 
 ## 依赖
 
-- [SourceMod 1.12](https://www.sourcemod.net/downloads.php?branch=stable) or higher
+- [SourceMod 1.11](https://www.sourcemod.net/downloads.php?branch=stable) or higher
 
 - clientprefs 插件拓展（可选）
 
